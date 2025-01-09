@@ -1,0 +1,84 @@
+<roll>          ::= <basic_roll> | <grouped_roll>
+
+<basic_roll>    ::= <number_of_dice> "d" <die_type> <modifiers>
+                  | <number_of_dice> "d" "%" <modifiers>
+                  | <number_of_dice> "d" "F" <modifiers>
+                  | <number_of_dice> "d" <die_type> <set_options>
+                  | <number_of_dice> "d" "%" <set_options>
+                  | <number_of_dice> "d" "F" <set_options>
+
+<grouped_roll>   ::= "{" <roll_group> ("," <roll_group>)* "}" <group_modifiers>
+                  | "{" <roll_group> ("," <roll_group>)* "}" <set_options>
+
+<roll_group>     ::= <basic_roll> | <constant>
+
+<constant>       ::= <integer>
+
+<number_of_dice> ::= <integer>
+                  | ""  // Empty string represents 1 die
+
+<die_type>      ::= <integer>
+
+<modifiers>     ::= (<modifier>)* // Zero or more modifiers
+
+<modifier>      ::= <keep_modifier>
+                  | <drop_modifier>
+                  | <reroll_modifier>
+                  | <explode_modifier>
+                  | <open_modifier>
+                  | <success_modifier>
+                  | <failure_modifier>
+                  | <sort_modifier>
+
+<keep_modifier> ::= "k" <keep_drop_value>
+                  | "kh" <keep_drop_value>
+
+<drop_modifier> ::= "d" <keep_drop_value>
+                  | "dl" <keep_drop_value>
+
+<keep_drop_value> ::= <integer>
+                  | "" //Empty string indicates default behavior
+
+<reroll_modifier> ::= "r" <comparison_point>
+                  | "ro" <comparison_point>
+
+<explode_modifier>::= "!" <comparison_point>
+
+<open_modifier> ::= ">!" <comparison_point>
+                  | "<!" <comparison_point>
+
+<success_modifier> ::= <comparison_point>
+
+<failure_modifier> ::= "f" <comparison_point>
+
+<sort_modifier> ::= "s" <sort_direction>
+                  | "sa"
+                  | "sd"
+
+<sort_direction>  ::= "a" | "d"
+
+<comparison_point> ::= <comparison_operator> <integer>
+                  | <integer> // Default is "="
+
+<comparison_operator> ::= "=" | ">" | "<"
+
+<group_modifiers> ::= (<group_modifier>)* // Zero or more modifiers
+
+<group_modifier>  ::= <success_modifier>
+                  | <failure_modifier>
+                  | <sort_modifier>
+
+<set_options>   ::= (<set_option>)+ // One or more set options
+
+<set_option>    ::= <reroll_modifier>
+                  | <explode_modifier>
+                  | <open_modifier>
+                  | <keep_modifier>
+                  | <drop_modifier>
+                  | <success_modifier>
+                  | <failure_modifier>
+                  | <sort_modifier>
+
+<integer>       ::= ["-"] <digit>+
+
+<digit>         ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
