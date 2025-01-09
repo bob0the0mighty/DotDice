@@ -97,14 +97,13 @@ public static class DiceParserCombinators
     // Parser for sort modifier
     private static readonly Parser<Modifier> _SortModifier =
         ParserCombinators.Char('s')
-            .SelectMany(
-                sort => _SortDirection,
-                (sort, value) => (Modifier)new SortModifier { Direction = value }
-            );
+            .Then(_SortDirection)
+            .Select(sort => (Modifier)new SortModifier { Direction = sort });
 
     // Parser for success modifier
     private static readonly Parser<Modifier> _SuccessModifier =
-        _ComparisonOperator
+        ParserCombinators.Char('S')
+            .Then(_ComparisonOperator)
             .SelectMany(
                 cOp => ParserCombinators.Integer,
                 (cOp, value) => (Modifier)new SuccessModifier { Operator = cOp, Value = value }
@@ -112,7 +111,7 @@ public static class DiceParserCombinators
 
     // Parser for failure modifier
     private static readonly Parser<Modifier> _FailureModifier =
-        ParserCombinators.Char('f')
+        ParserCombinators.Char('F')
             .Then(_ComparisonOperator)
             .SelectMany(
                 parser => ParserCombinators.Integer,
