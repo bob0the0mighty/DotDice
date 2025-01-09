@@ -7,6 +7,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "DotDiceF", "DotDiceF\DotDic
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotDiceTests", "DotDiceTests\DotDiceTests.csproj", "{AB3C8883-57D0-44C2-9471-38A0A063D936}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotDice", "DotDice\DotDice.csproj", "{8AD65B01-DD53-4823-A742-79A6FC05919C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{AB3C8883-57D0-44C2-9471-38A0A063D936}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AB3C8883-57D0-44C2-9471-38A0A063D936}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AB3C8883-57D0-44C2-9471-38A0A063D936}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8AD65B01-DD53-4823-A742-79A6FC05919C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8AD65B01-DD53-4823-A742-79A6FC05919C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8AD65B01-DD53-4823-A742-79A6FC05919C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8AD65B01-DD53-4823-A742-79A6FC05919C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

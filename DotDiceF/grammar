@@ -47,7 +47,7 @@
 <open_modifier> ::= ">!" <comparison_point>
                   | "<!" <comparison_point>
 
-<success_modifier> ::= <comparison_point>
+<success_modifier> ::= "<comparison_point>
 
 <failure_modifier> ::= "f" <comparison_point>
 
