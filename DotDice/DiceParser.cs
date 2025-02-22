@@ -1,77 +1,80 @@
+using System.Runtime.CompilerServices;
+using Pidgin;
+using static Pidgin.Parser;
+
 namespace DotDice
 {
     public static class DiceParser
     {
         // Parser for comparison operators
-        public static readonly Parser<ComparisonOperator> comparisonOperator =
-            ParserCombinators.Char('=')
+        public static readonly Parser<char, ComparisonOperator> comparisonOperator =
+            Char('=')
                 .ThenReturn(ComparisonOperator.Equal)
-            .Or(ParserCombinators.Char('>')
+            .Or(Char('>')
                 .ThenReturn(ComparisonOperator.GreaterThan))
-            .Or(ParserCombinators.Char('<')
+            .Or(Char('<')
                 .ThenReturn(ComparisonOperator.LessThan));
 
         // Parser for sort directions
-        public static readonly Parser<SortDirection> sortDirection =
-            ParserCombinators.Char('a')
+        public static readonly Parser<char, SortDirection> sortDirection =
+            Char('a')
                 .ThenReturn(SortDirection.Ascending)
-            .Or(ParserCombinators.Char('d')
+            .Or(Char('d')
                 .ThenReturn(SortDirection.Descending));
 
         // Parser for sort modifier
-        public static readonly Parser<Modifier> sortModifier =
-            ParserCombinators.String("sa")
+        public static readonly Parser<char, Modifier> sortModifier =
+            String("sa")
                 .ThenReturn((Modifier)new SortModifier(SortDirection.Ascending))
-            .Or(ParserCombinators.String("sd")
+            .Or(String("sd")
                 .ThenReturn((Modifier)new SortModifier(SortDirection.Descending)));
 
         // Parser for success modifier
-        public static readonly Parser<Modifier> successModifier =
-            comparisonOperator
-                .SelectMany(
-                    op => ParserCombinators.Integer,
-                    (op, value) => (Modifier)new SuccessModifier(op, value)
-                );
+        public static readonly Parser<char, Modifier> successModifier =
+            Map(
+                (op, value) => (Modifier)new SuccessModifier(op, value),
+                comparisonOperator,
+                Num
+            );
 
         // Parser for failure modifier
-        public static readonly Parser<Modifier> failureModifier =
-            ParserCombinators.Char('f')
-                .Then(comparisonOperator)
-                .SelectMany(
-                    op => ParserCombinators.Integer,
-                    (op, value) => (Modifier)new FailureModifier(op, value)
-                );
+        public static readonly Parser<char, Modifier> failureModifier =
+            Map(
+                (op, value) => (Modifier)new FailureModifier(op, value),
+                Char('f').Then(comparisonOperator),
+                Num
+            );
 
         // Parser for explode modifier
-        public static readonly Parser<Modifier> explodeModifier =
-            ParserCombinators.Char('!')
-                .Then(comparisonOperator.Optional())
-                .SelectMany(
-                    cOp => ParserCombinators.Integer,
-                    (cOp, value) =>
+        public static readonly Parser<char, Modifier> explodeModifier =
+            Map(
+                (cOp, value) =>
                     {
-                
-                        return (Modifier)new ExplodeModifier(cOp.HasValue ? cOp.Value : ComparisonOperator.Equal, value);
-                    });
+                        return (Modifier)new ExplodeModifier(cOp, value);
+                    },
+                Char('!').Then(comparisonOperator),
+                Num
+            );
 
         // Parser for compounding modifier
-        public static readonly Parser<Modifier> compoundingModifier =
-            ParserCombinators.String("!!")
-                .Then(comparisonOperator.Optional())
-                .SelectMany(
-                    cOp => ParserCombinators.Integer,
-                    (op, value) =>
+        public static readonly Parser<char, Modifier> compoundingModifier =
+            Map(
+                (op, value) =>
                     {
-                        return (Modifier)new CompoundingModifier(op.HasValue ? op.Value : ComparisonOperator.Equal, value);
-                    });
+                        return (Modifier)new CompoundingModifier(op, value);
+                    },
+                String("!!").Then(comparisonOperator),
+                Num
+            );
+
 
         // Parser for reroll modifier
         public static readonly Parser<Modifier> rerollModifier =
-            ParserCombinators.Char('r')
-                .Then(ParserCombinators.Char('o').Optional())
+            Char('r')
+                .Then(Char('o').Optional())
                 .SelectMany(_ => comparisonOperator, (ro, op) => (ro, op))
                 .SelectMany(
-                    _ => ParserCombinators.Integer,
+                    _ => Integer,
                     (tup, value) =>
                     {
                         var (onlyOnce, cOp) = tup;
@@ -80,17 +83,17 @@ namespace DotDice
 
         // Parser for keep modifier
         public static readonly Parser<Modifier> keepModifier =
-            ParserCombinators.String("kh")
+            String("kh")
                 .SelectMany(
-                    _ => ParserCombinators.OptionalInteger,
+                    _ => OptionalInteger,
                     (_, count) =>
                     {
                         return (Modifier)new KeepModifier(count.HasValue ? count.Value : 1, true);
                     })
             .Or(
-                ParserCombinators.String("kl")
+                String("kl")
                 .SelectMany(
-                    _ => ParserCombinators.OptionalInteger,
+                    _ => OptionalInteger,
                     (_, count) =>
                     {
                         return (Modifier)new KeepModifier(count.HasValue ? count.Value : 1, false);
@@ -98,17 +101,17 @@ namespace DotDice
 
         // Parser for drop modifier
         public static readonly Parser<Modifier> dropModifier =
-            ParserCombinators.String("dh")
+            String("dh")
                 .SelectMany(
-                    _ => ParserCombinators.OptionalInteger,
+                    _ => OptionalInteger,
                     (_, count) =>
                     {
                         return (Modifier)new DropModifier(count.HasValue ? count.Value : 1, false);
                     })
             .Or(
-                ParserCombinators.String("dl")
+                String("dl")
                 .SelectMany(
-                    _ => ParserCombinators.OptionalInteger,
+                    _ => OptionalInteger,
                     (_, count) =>
                     {
                         return (Modifier)new DropModifier(count.HasValue ? count.Value : 1, true);
@@ -130,20 +133,20 @@ namespace DotDice
 
         // Parser for a constant
         public static readonly Parser<Roll> Constant =
-            ParserCombinators.Integer.Select(x => (Roll)new Constant(x));
+            Integer.Select(x => (Roll)new Constant(x));
 
         // Parser for a die type section
         public static readonly Parser<(int DieType, bool IsFudgeDie, bool IsPercentile)> dieTypeSection =
-            ParserCombinators.Char('F')
+            Char('F')
                 .ThenReturn((DieType: 0, IsFudgeDie: true, IsPercentile: false))
-            .Or(ParserCombinators.Char('%')
+            .Or(Char('%')
                 .ThenReturn((DieType: 0, IsFudgeDie: false, IsPercentile: true)))
-            .Or(ParserCombinators.Integer.Select(dt => (DieType: dt, IsFudgeDie: false, IsPercentile: false)));
+            .Or(Integer.Select(dt => (DieType: dt, IsFudgeDie: false, IsPercentile: false)));
 
         // Parser for a basic roll
         public static readonly Parser<Roll> basicRoll =
-            ParserCombinators.OptionalInteger
-                .ThenSkip(ParserCombinators.Char('d'))
+            OptionalInteger
+                .ThenSkip(Char('d'))
                 .SelectMany(_ => dieTypeSection, (numDice, dts) => (numDice, dts.DieType, dts.IsFudgeDie, dts.IsPercentile))
                 .SelectMany(
                     _ => Modifiers,
@@ -158,9 +161,9 @@ namespace DotDice
 
         // Parser for a grouped roll
         public static readonly Parser<Roll> groupedRoll =
-    ParserCombinators.Char('{')
-        .Then(RollGroup.ThenSkip(ParserCombinators.Optional(ParserCombinators.Char(','))).Many())
-        .ThenSkip(ParserCombinators.Char('}'))
+    Char('{')
+        .Then(RollGroup.ThenSkip(Optional(Char(','))).Many())
+        .ThenSkip(Char('}'))
         .SelectMany(
             rolls => Modifiers,
             (rolls, modifiers) => (Roll)new GroupedRoll(rolls, modifiers));
