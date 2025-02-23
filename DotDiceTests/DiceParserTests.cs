@@ -32,7 +32,7 @@ namespace DotDice.Tests
             Assert.That(modifier.Value, Is.EqualTo(expectedValue));
         }
 
-        [TestCase("!5", ComparisonOperator.Equal, 5)]
+        [TestCase("!=5", ComparisonOperator.Equal, 5)]
         [TestCase("!>10", ComparisonOperator.GreaterThan, 10)]
         [TestCase("!<3", ComparisonOperator.LessThan, 3)]
         public void ExplodeModifier_Parse_ShouldReturnExpectedModifier(string input, ComparisonOperator expectedOp, int expectedValue)
@@ -44,7 +44,7 @@ namespace DotDice.Tests
             Assert.That(modifier.Value, Is.EqualTo(expectedValue));
         }
 
-        [TestCase("^5", ComparisonOperator.Equal, 5)]
+        [TestCase("^=5", ComparisonOperator.Equal, 5)]
         [TestCase("^>10", ComparisonOperator.GreaterThan, 10)]
         [TestCase("^<3", ComparisonOperator.LessThan, 3)]
         public void CompoundingModifier_Parse_ShouldReturnExpectedModifier(string input, ComparisonOperator expectedOp, int expectedValue)
@@ -136,17 +136,35 @@ namespace DotDice.Tests
         {
             get
             {
-                yield return new TestCaseData("d6", 1, new DieType.Basic(6));
-                yield return new TestCaseData("2d10", 2, new DieType.Basic(10));
-                yield return new TestCaseData("dF", 1, new DieType.Fudge());
-                yield return new TestCaseData("d%", 1, new DieType.Percent());
+                yield return new TestCaseData("d6", 1, new DieType.Basic(6), true);
+                yield return new TestCaseData("2d10", 2, new DieType.Basic(10), true);
+                yield return new TestCaseData("dF", 1, new DieType.Fudge(), true);
+                yield return new TestCaseData("d%", 1, new DieType.Percent(), true);
+                yield return new TestCaseData("2d20>15", 2, new DieType.Basic(20), true);
+                yield return new TestCaseData("2d20f<15", 2, new DieType.Basic(20), true);
+                yield return new TestCaseData("3d6!>3", 3, new DieType.Basic(6), true);
+                yield return new TestCaseData("4d8^<2", 4, new DieType.Basic(8), true);
+                yield return new TestCaseData("d10ro=5", 1, new DieType.Basic(10), true);
+                yield return new TestCaseData("d12rc>3", 1, new DieType.Basic(12), true);
+                yield return new TestCaseData("5d6kh3", 5, new DieType.Basic(6), true);
+                yield return new TestCaseData("2d6kh", 2, new DieType.Basic(6), true);
+                yield return new TestCaseData("2d6kl", 2, new DieType.Basic(6), true);
+                yield return new TestCaseData("5d6kl2", 5, new DieType.Basic(6), true);
+                yield return new TestCaseData("2d6dh2", 2, new DieType.Basic(6), true);
+                yield return new TestCaseData("2d6dl", 2, new DieType.Basic(6), true);
             }
         }
 
         [TestCaseSource(nameof(BasicRollTestCases))]
-        public void BasicRoll_Parse_ShouldReturnExpectedBasicRoll(string input, int expectedNumDice, DieType expectedDieType)
+        public void BasicRoll_Parse_ShouldReturnExpectedBasicRoll(
+            string input,
+            int expectedNumDice, 
+            DieType expectedDieType, 
+            bool expectedSuccess
+        )
         {
             var result = DiceParser.basicRoll.Parse(input);
+            Assert.That(result.Success, Is.EqualTo(expectedSuccess));
             var roll = result.Value as BasicRoll;
             Assert.NotNull(roll);
             Assert.That(roll.NumberOfDice, Is.EqualTo(expectedNumDice));

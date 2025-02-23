@@ -46,7 +46,6 @@
                       | "sd"
 
 <comparison_point>  ::= <comparison_operator> <integer>
-                      | <integer> // Default is "="
 
 <comparison_operator> ::= "=" | ">" | "<"
 
