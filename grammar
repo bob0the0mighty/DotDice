@@ -1,6 +1,9 @@
 <roll>              ::= <basic_roll> | <constant>
 
-<basic_roll>        ::= <number_of_dice> "d" <die_type_section> <modifiers>
+<basic_roll>        ::= <number_of_dice> "d" <die_type_section> <modifiers> 
+
+<arithmatic>        ::= <addition>
+                      | <subtraction>
 
 <constant>          ::= <integer>
 
@@ -21,6 +24,7 @@
                       | <success_modifier>
                       | <failure_modifier>
                       | <sort_modifier>
+                      | <contstant_modifier>
 
 <keep_modifier>     ::= "kl" <keep_drop_value> //keep keep_drop_value lowest results
                       | "kh" <keep_drop_value> //keep keep_drop_value highest results
@@ -42,8 +46,7 @@
 
 <failure_modifier>  ::= "f" <comparison_point> 
 
-<sort_modifier>     ::= "sa"
-                      | "sd"
+<contstant_modifier> ::= <arithmatic> <constant>
 
 <comparison_point>  ::= <comparison_operator> <integer>
 

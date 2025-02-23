@@ -12,6 +12,12 @@ namespace DotDice
         LessThan
     }
 
+    public enum ArithmaticOperator
+    {
+        Add,
+        Subtract
+    }
+
     public enum SortDirection
     {
         Ascending,

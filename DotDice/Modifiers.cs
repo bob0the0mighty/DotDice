@@ -1,5 +1,10 @@
 namespace DotDice
 {
+    static class Constants{
+        public const string HIGHEST = "highest";
+        public const string LOWEST = "lowest";
+    }
+
     public abstract record Modifier
     {
         public override string ToString()
@@ -12,7 +17,7 @@ namespace DotDice
     {
         public override string ToString()
         {
-            return $"KeepModifier: Count={Count}, KeepHighest={KeepHighest}";
+            return $"Keep {(KeepHighest ? Constants.HIGHEST : Constants.LOWEST)} {Count} dice";
         }
     }
 
@@ -20,7 +25,7 @@ namespace DotDice
     {
         public override string ToString()
         {
-            return $"DropModifier: Count={Count}, DropLowest={DropHighest}";
+            return $"Drop {(DropHighest ? Constants.HIGHEST : Constants.LOWEST)} {Count}";
         }
     }
 
@@ -28,15 +33,15 @@ namespace DotDice
     {
         public override string ToString()
         {
-            return $"RerollOnceModifier: Operator={Operator}, Value={Value}";
+            return $"Reroll dice {Operator} than {Value} once";
         }
     }
 
-    public record RerollCompoundModifier(ComparisonOperator Operator, int Value) : Modifier
+    public record RerollUntilModifier(ComparisonOperator Operator, int Value) : Modifier
     {
         public override string ToString()
         {
-            return $"RerollCompoundModifier: Operator={Operator}, Value={Value}";
+            return $"Reroll until result is {Operator} than {Value}";
         }
     }
 
@@ -44,7 +49,7 @@ namespace DotDice
     {
         public override string ToString()
         {
-            return $"ExplodeModifier: Operator={Operator}, Value={Value}";
+            return $"Explode dice {Operator} than {Value}";
         }
     }
 
@@ -67,15 +72,15 @@ namespace DotDice
     {
         public override string ToString()
         {
-            return $"FailureModifier: Operator={Operator}, Value={Value}";
+            return $"Fail rolls {Operator} than {Value}";
         }
     }
 
-    public record SortModifier(SortDirection Direction) : Modifier
+    public record ConstantModifier(ArithmaticOperator Operator, int Value) : Modifier
     {
         public override string ToString()
         {
-            return $"SortModifier: Direction={Direction}";
+            return $"{Operator} {Value} to final roll";
         }
     }
 }
