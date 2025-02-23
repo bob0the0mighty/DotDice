@@ -16,19 +16,27 @@ namespace DotDice
         }
     }
 
-    public record DropModifier(int Count, bool DropLowest) : Modifier
+    public record DropModifier(int Count, bool DropHighest) : Modifier
     {
         public override string ToString()
         {
-            return $"DropModifier: Count={Count}, DropLowest={DropLowest}";
+            return $"DropModifier: Count={Count}, DropLowest={DropHighest}";
         }
     }
 
-    public record RerollModifier(ComparisonOperator Operator, int Value, bool OnlyOnce) : Modifier
+    public record RerollOnceModifier(ComparisonOperator Operator, int Value) : Modifier
     {
         public override string ToString()
         {
-            return $"RerollModifier: Operator={Operator}, Value={Value}, OnlyOnce={OnlyOnce}";
+            return $"RerollOnceModifier: Operator={Operator}, Value={Value}";
+        }
+    }
+
+    public record RerollCompoundModifier(ComparisonOperator Operator, int Value) : Modifier
+    {
+        public override string ToString()
+        {
+            return $"RerollCompoundModifier: Operator={Operator}, Value={Value}";
         }
     }
 

@@ -4,6 +4,8 @@ using static Pidgin.Parser;
 
 namespace DotDice
 {
+    public record ComparisonPoint(ComparisonOperator compOp, int value);
+
     public static class DiceParser
     {
         // Parser for comparison operators
@@ -15,12 +17,17 @@ namespace DotDice
             .Or(Char('<')
                 .ThenReturn(ComparisonOperator.LessThan));
 
-        // Parser for sort directions
-        public static readonly Parser<char, SortDirection> sortDirection =
-            Char('a')
-                .ThenReturn(SortDirection.Ascending)
-            .Or(Char('d')
-                .ThenReturn(SortDirection.Descending));
+        // Parser for comparison point
+        public static readonly Parser<char, ComparisonPoint> comparisonPoint =
+            Try(
+                comparisonOperator
+                .Then(
+                    DecimalNum, (op, val) => new ComparisonPoint(op, val)
+                )
+            ) 
+            .Or(
+                DecimalNum .Map(val => new ComparisonPoint(ComparisonOperator.Equal, val))
+            );
 
         // Parser for sort modifier
         public static readonly Parser<char, Modifier> sortModifier =
@@ -31,144 +38,143 @@ namespace DotDice
 
         // Parser for success modifier
         public static readonly Parser<char, Modifier> successModifier =
-            Map(
-                (op, value) => (Modifier)new SuccessModifier(op, value),
-                comparisonOperator,
-                Num
-            );
+           comparisonPoint.Map(cp => (Modifier) new SuccessModifier(cp.compOp, cp.value));
 
         // Parser for failure modifier
         public static readonly Parser<char, Modifier> failureModifier =
-            Map(
-                (op, value) => (Modifier)new FailureModifier(op, value),
-                Char('f').Then(comparisonOperator),
-                Num
-            );
+            Char('f')
+                .Then(
+                    comparisonPoint,
+                    (_, cp) => (Modifier) new FailureModifier(cp.compOp, cp.value)
+                );
 
         // Parser for explode modifier
         public static readonly Parser<char, Modifier> explodeModifier =
-            Map(
-                (cOp, value) =>
-                    {
-                        return (Modifier)new ExplodeModifier(cOp, value);
-                    },
-                Char('!').Then(comparisonOperator),
-                Num
+            Char('!').
+                Then(
+                    comparisonPoint,
+                    (_, cp) => (Modifier) new ExplodeModifier(cp.compOp, cp.value)
             );
 
         // Parser for compounding modifier
         public static readonly Parser<char, Modifier> compoundingModifier =
-            Map(
-                (op, value) =>
-                    {
-                        return (Modifier)new CompoundingModifier(op, value);
-                    },
-                String("!!").Then(comparisonOperator),
-                Num
+            Char('^').
+                Then(
+                    comparisonPoint,
+                    (_, cp) => (Modifier) new CompoundingModifier(cp.compOp, cp.value)
             );
 
+        // Parser for reroll modifier
+        public static readonly Parser<char, Modifier> rerollOnceModifier =
+            String("ro")
+                .Then(
+                    comparisonPoint,
+                    (_, cp) => (Modifier) new RerollOnceModifier(cp.compOp, cp.value)
+                );
 
         // Parser for reroll modifier
-        public static readonly Parser<Modifier> rerollModifier =
-            Char('r')
-                .Then(Char('o').Optional())
-                .SelectMany(_ => comparisonOperator, (ro, op) => (ro, op))
-                .SelectMany(
-                    _ => Integer,
-                    (tup, value) =>
-                    {
-                        var (onlyOnce, cOp) = tup;
-                        return (Modifier)new RerollModifier(cOp, value, onlyOnce.HasValue);
-                    });
+        public static readonly Parser<char, Modifier> rerollCompoundModifier =
+            String("rc")
+                .Then(
+                    comparisonPoint,
+                    (_, cp) => (Modifier) new RerollCompoundModifier(cp.compOp, cp.value)
+                );
 
         // Parser for keep modifier
-        public static readonly Parser<Modifier> keepModifier =
+        public static readonly Parser<char, Modifier> keepHighModifier =
             String("kh")
-                .SelectMany(
-                    _ => OptionalInteger,
-                    (_, count) =>
+                .Then(
+                    DecimalNum.Optional(),
+                    (_,maybeVal) => 
                     {
-                        return (Modifier)new KeepModifier(count.HasValue ? count.Value : 1, true);
-                    })
-            .Or(
-                String("kl")
-                .SelectMany(
-                    _ => OptionalInteger,
-                    (_, count) =>
+                        var val = maybeVal.HasValue ? int.Abs(maybeVal.Value) : 1;
+                        return (Modifier) new KeepModifier(val, true);
+                    }
+                );
+            
+        // Parser for keep low modifier
+        public static readonly Parser<char, Modifier> keepLowModifier =
+            String("kl")
+                .Then(
+                    DecimalNum.Optional(),
+                    (_,maybeVal) => 
                     {
-                        return (Modifier)new KeepModifier(count.HasValue ? count.Value : 1, false);
-                    }));
+                        var val = maybeVal.HasValue ? int.Abs(maybeVal.Value) : 1;
+                        return (Modifier) new KeepModifier(val, false);
+                    }
+                );
 
-        // Parser for drop modifier
-        public static readonly Parser<Modifier> dropModifier =
+        // Parser for drop high modifier
+        public static readonly Parser<char, Modifier> dropHighModifier =
             String("dh")
-                .SelectMany(
-                    _ => OptionalInteger,
-                    (_, count) =>
+                .Then(
+                    DecimalNum.Optional(),
+                    (_,maybeVal) => 
                     {
-                        return (Modifier)new DropModifier(count.HasValue ? count.Value : 1, false);
-                    })
-            .Or(
-                String("dl")
-                .SelectMany(
-                    _ => OptionalInteger,
-                    (_, count) =>
+                        var val = maybeVal.HasValue ? int.Abs(maybeVal.Value) : 1;
+                        return (Modifier) new DropModifier(val, true);
+                    }
+                );
+
+        // Parser for drop low modifier
+        public static readonly Parser<char, Modifier> dropLowModifier = 
+            String("dl")
+                .Then(
+                    DecimalNum.Optional(),
+                    (_,maybeVal) => 
                     {
-                        return (Modifier)new DropModifier(count.HasValue ? count.Value : 1, true);
-                    }));
+                        var val = maybeVal.HasValue ? int.Abs(maybeVal.Value) : 1;
+                        return (Modifier) new DropModifier(val, false);
+                    }
+                );
 
         // Parser for a single modifier
-        public static readonly Parser<Modifier> Modifier =
-            keepModifier
-                .Or(dropModifier)
-                .Or(rerollModifier)
+        public static readonly Parser<char, Modifier> Modifier =
+            successModifier
+                .Or(failureModifier)
+                .Or(dropHighModifier)
+                .Or(dropLowModifier)
+                .Or(keepHighModifier)
+                .Or(keepLowModifier)
+                .Or(rerollOnceModifier)
+                .Or(rerollCompoundModifier)
                 .Or(explodeModifier)
                 .Or(compoundingModifier)
-                .Or(successModifier)
-                .Or(failureModifier)
                 .Or(sortModifier);
 
         // Parser for multiple modifiers
-        public static readonly Parser<List<Modifier>> Modifiers = Modifier.Many();
+        public static readonly Parser<char, IEnumerable<Modifier>> Modifiers = Modifier.Many();
 
         // Parser for a constant
-        public static readonly Parser<Roll> Constant =
-            Integer.Select(x => (Roll)new Constant(x));
+        public static readonly Parser<char, Roll> Constant =
+            DecimalNum.Select(x => (Roll) new Constant(x));
 
         // Parser for a die type section
-        public static readonly Parser<(int DieType, bool IsFudgeDie, bool IsPercentile)> dieTypeSection =
+        public static readonly Parser<char, DieType> dieTypeSection =
             Char('F')
-                .ThenReturn((DieType: 0, IsFudgeDie: true, IsPercentile: false))
+                .Map(_ => (DieType) new DieType.Fudge())
             .Or(Char('%')
-                .ThenReturn((DieType: 0, IsFudgeDie: false, IsPercentile: true)))
-            .Or(Integer.Select(dt => (DieType: dt, IsFudgeDie: false, IsPercentile: false)));
+                .Map(_ => (DieType) new DieType.Percent()))
+            .Or(DecimalNum
+                .Map(val => (DieType) new DieType.Basic(val)));
 
         // Parser for a basic roll
-        public static readonly Parser<Roll> basicRoll =
-            OptionalInteger
-                .ThenSkip(Char('d'))
-                .SelectMany(_ => dieTypeSection, (numDice, dts) => (numDice, dts.DieType, dts.IsFudgeDie, dts.IsPercentile))
-                .SelectMany(
-                    _ => Modifiers,
-                    (tup, modifiers) =>
-                    {
-                        var (numDice, dieType, isFudge, isPercentile) = tup;
-                        return (Roll)new BasicRoll(numDice.HasValue ? numDice.Value : 1, dieType, isFudge, isPercentile, modifiers);
-                    });
-
-        // Parser for a roll group (either a basic roll or a constant)
-        public static readonly Parser<Roll> RollGroup = basicRoll.Or(Constant);
-
-        // Parser for a grouped roll
-        public static readonly Parser<Roll> groupedRoll =
-    Char('{')
-        .Then(RollGroup.ThenSkip(Optional(Char(','))).Many())
-        .ThenSkip(Char('}'))
-        .SelectMany(
-            rolls => Modifiers,
-            (rolls, modifiers) => (Roll)new GroupedRoll(rolls, modifiers));
+        public static readonly Parser<char, Roll> basicRoll =
+            Map(
+                (maybeNum, _, die, mod) => 
+                    (Roll) new BasicRoll(
+                        maybeNum.HasValue ? maybeNum.Value : 1,
+                        die,
+                        mod
+                    )
+                ,
+                DecimalNum.Optional(),
+                Char('d'),
+                dieTypeSection,
+                Modifiers
+            );
 
         // Top-level parser for any roll
-        public static readonly Parser<Roll> Roll = groupedRoll.Or(basicRoll);
+        public static readonly Parser<char, Roll> Roll = basicRoll.Or(Constant);
     }
 }

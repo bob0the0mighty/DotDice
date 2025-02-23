@@ -10,15 +10,13 @@ namespace DotDice
 
     public record BasicRoll(
         int NumberOfDice,
-        int DieType,
-        bool IsFudgeDie,
-        bool IsPercentile,
-        List < Modifier > Modifiers
+        DieType DieType,
+        IEnumerable<Modifier> Modifiers
     ): Roll
     {
         public override string ToString()
         {
-            return $"BasicRoll: NumberOfDice={NumberOfDice}, DieType={DieType}, IsFudgeDie={IsFudgeDie}, IsPercentile={IsPercentile}, Modifiers=[{string.Join(", ", Modifiers.Select(m => m.ToString()))}]";
+            return $"BasicRoll: NumberOfDice={NumberOfDice}, DieType={DieType}, Modifiers=[{string.Join(", ", Modifiers.Select(m => m.ToString()))}]";
         }
     }
 
