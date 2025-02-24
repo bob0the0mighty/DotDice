@@ -1,15 +1,14 @@
-using System.Runtime.CompilerServices;
 using Pidgin;
 using static Pidgin.Parser;
 using static Pidgin.Parser<char>;
 
-namespace DotDice
+namespace DotDice.Parser
 {
     public record ComparisonPoint(ComparisonOperator compOp, int value);
 
     public static class DiceParser
     {
-        static Parser<char, int> PositiveInt = 
+        static Parser<char, int> PositiveInt =
             DecimalNum.Where(x => x > 0);
 
         static Parser<char, T> Tok<T>(Parser<char, T> p)
@@ -38,7 +37,7 @@ namespace DotDice
         // Parser for success modifier
         public static readonly Parser<char, Modifier> successModifier =
             Tok(
-                comparisonPoint.Map(cp => (Modifier) new SuccessModifier(cp.compOp, cp.value))
+                comparisonPoint.Map(cp => (Modifier)new SuccessModifier(cp.compOp, cp.value))
             );
 
         // Parser for failure modifier
@@ -47,7 +46,7 @@ namespace DotDice
                 Char('f')
                 .Then(
                     comparisonPoint,
-                    (_, cp) => (Modifier) new FailureModifier(cp.compOp, cp.value)
+                    (_, cp) => (Modifier)new FailureModifier(cp.compOp, cp.value)
                 )
             );
 
@@ -57,7 +56,7 @@ namespace DotDice
                 Char('!').
                 Then(
                     comparisonPoint,
-                    (_, cp) => (Modifier) new ExplodeModifier(cp.compOp, cp.value)
+                    (_, cp) => (Modifier)new ExplodeModifier(cp.compOp, cp.value)
                 )
             );
 
@@ -67,7 +66,7 @@ namespace DotDice
                 Char('^').
                 Then(
                     comparisonPoint,
-                    (_, cp) => (Modifier) new CompoundingModifier(cp.compOp, cp.value)
+                    (_, cp) => (Modifier)new CompoundingModifier(cp.compOp, cp.value)
                 )
             );
 
@@ -77,7 +76,7 @@ namespace DotDice
                 String("ro")
                 .Then(
                     comparisonPoint,
-                    (_, cp) => (Modifier) new RerollOnceModifier(cp.compOp, cp.value)
+                    (_, cp) => (Modifier)new RerollOnceModifier(cp.compOp, cp.value)
                 )
             );
 
@@ -87,7 +86,7 @@ namespace DotDice
                 String("rc")
                 .Then(
                     comparisonPoint,
-                    (_, cp) => (Modifier) new RerollUntilModifier(cp.compOp, cp.value)
+                    (_, cp) => (Modifier)new RerollUntilModifier(cp.compOp, cp.value)
                 )
             );
 
@@ -97,10 +96,10 @@ namespace DotDice
                 String("kh")
                 .Then(
                     PositiveInt.Optional(),
-                    (_,maybeVal) => 
+                    (_, maybeVal) =>
                     {
                         var val = maybeVal.HasValue ? maybeVal.Value : 1;
-                        return (Modifier) new KeepModifier(val, true);
+                        return (Modifier)new KeepModifier(val, true);
                     }
                 )
             );
@@ -111,10 +110,10 @@ namespace DotDice
                String("kl")
                 .Then(
                     PositiveInt.Optional(),
-                    (_,maybeVal) => 
+                    (_, maybeVal) =>
                     {
                         var val = maybeVal.HasValue ? maybeVal.Value : 1;
-                        return (Modifier) new KeepModifier(val, false);
+                        return (Modifier)new KeepModifier(val, false);
                     }
                 )
             );
@@ -125,24 +124,24 @@ namespace DotDice
                 String("dh")
                 .Then(
                     PositiveInt.Optional(),
-                    (_,maybeVal) => 
+                    (_, maybeVal) =>
                     {
                         var val = maybeVal.HasValue ? maybeVal.Value : 1;
-                        return (Modifier) new DropModifier(val, true);
+                        return (Modifier)new DropModifier(val, true);
                     }
                 )
             );
 
         // Parser for drop low modifier
-        public static readonly Parser<char, Modifier> dropLowModifier = 
+        public static readonly Parser<char, Modifier> dropLowModifier =
             Tok(
                 String("dl")
                 .Then(
                     PositiveInt.Optional(),
-                    (_,maybeVal) => 
+                    (_, maybeVal) =>
                     {
                         var val = maybeVal.HasValue ? maybeVal.Value : 1;
-                        return (Modifier) new DropModifier(val, false);
+                        return (Modifier)new DropModifier(val, false);
                     }
                 )
             );
@@ -153,10 +152,10 @@ namespace DotDice
                 .Or(Char('-'))
                 .Then(
                     PositiveInt,
-                    (opChar,val) => 
+                    (opChar, val) =>
                     {
                         var op = opChar == '+' ? ArithmaticOperator.Add : ArithmaticOperator.Subtract;
-                        return (Modifier) new ConstantModifier(op, val);
+                        return (Modifier)new ConstantModifier(op, val);
                     }
                 )
             );
@@ -181,7 +180,7 @@ namespace DotDice
         // Parser for a constant
         public static readonly Parser<char, Roll> Constant =
             Tok(
-                PositiveInt.Select(x => (Roll) new Constant(x))
+                PositiveInt.Select(x => (Roll)new Constant(x))
                 .Before(End)
             );
 
@@ -189,18 +188,18 @@ namespace DotDice
         public static readonly Parser<char, DieType> dieTypeSection =
             Tok(
                 Char('F')
-                    .Map(_ => (DieType) new DieType.Fudge())
+                    .Map(_ => (DieType)new DieType.Fudge())
                 .Or(Char('%')
-                    .Map(_ => (DieType) new DieType.Percent()))
+                    .Map(_ => (DieType)new DieType.Percent()))
                 .Or(DecimalNum
-                    .Map(val => (DieType) new DieType.Basic(val)))
+                    .Map(val => (DieType)new DieType.Basic(val)))
             );
 
         // Parser for a basic roll
         public static readonly Parser<char, Roll> basicRoll =
             Map(
-                (maybeNum, _, die, mod) => 
-                    (Roll) new BasicRoll(
+                (maybeNum, _, die, mod) =>
+                    (Roll)new BasicRoll(
                         maybeNum.HasValue ? maybeNum.Value : 1,
                         die,
                         mod
@@ -214,7 +213,7 @@ namespace DotDice
             .Before(End);
 
         // Top-level parser for any roll
-        public static readonly Parser<char, Roll> Roll = 
+        public static readonly Parser<char, Roll> Roll =
             (basicRoll
             .Or(Constant))
             .Before(End);

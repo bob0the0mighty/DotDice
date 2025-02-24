@@ -1,7 +1,5 @@
-using NUnit.Framework;
-using DotDice;
+using DotDice.Parser;
 using Pidgin;
-using System.Collections.Generic;
 
 namespace DotDice.Tests
 {

@@ -1,9 +1,5 @@
-namespace DotDice
+namespace DotDice.Parser
 {
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Security.Cryptography.X509Certificates;
-
     // Enums for ComparisonOperator and SortDirection
     public enum ComparisonOperator
     {
@@ -28,6 +24,6 @@ namespace DotDice
     {
         public record Basic(int sides) : DieType;
         public record Percent() : DieType;
-        public record Fudge(): DieType;
+        public record Fudge() : DieType;
     }
 }

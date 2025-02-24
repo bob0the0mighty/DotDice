@@ -1,8 +1,5 @@
-namespace DotDice
+namespace DotDice.Parser
 {
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Runtime.InteropServices;
 
     public abstract record Roll
     {
@@ -12,7 +9,7 @@ namespace DotDice
         int NumberOfDice,
         DieType DieType,
         IEnumerable<Modifier> Modifiers
-    ): Roll
+    ) : Roll
     {
         public override string ToString()
         {

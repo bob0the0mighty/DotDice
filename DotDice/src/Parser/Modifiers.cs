@@ -1,6 +1,7 @@
-namespace DotDice
+namespace DotDice.Parser
 {
-    static class Constants{
+    static class Constants
+    {
         public const string HIGHEST = "highest";
         public const string LOWEST = "lowest";
     }
