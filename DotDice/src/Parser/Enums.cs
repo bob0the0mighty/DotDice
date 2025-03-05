@@ -25,5 +25,8 @@ namespace DotDice.Parser
         public record Basic(int sides) : DieType;
         public record Percent() : DieType;
         public record Fudge() : DieType;
+        public record Reroll(int sides) : DieType;
+        public record Constant() : DieType;
+        public record Explode(int sides) : DieType;
     }
 }

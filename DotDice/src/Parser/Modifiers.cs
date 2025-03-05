@@ -66,14 +66,14 @@ namespace DotDice.Parser
     {
         public override string ToString()
         {
-            return $"SuccessModifier: Operator={Operator}, Value={Value}";
+            return $"rolls {Operator} than {Value} succeed";
         }
     }
     public record FailureModifier(ComparisonOperator Operator, int Value) : Modifier
     {
         public override string ToString()
         {
-            return $"Fail rolls {Operator} than {Value}";
+            return $"rolls {Operator} than {Value} fail";
         }
     }
 
@@ -81,7 +81,8 @@ namespace DotDice.Parser
     {
         public override string ToString()
         {
-            return $"{Operator} {Value} to final roll";
+            var term = Operator == ArithmaticOperator.Add ? "to" : "from";
+            return $"{Operator} {Value} {term} final roll";
         }
     }
 }

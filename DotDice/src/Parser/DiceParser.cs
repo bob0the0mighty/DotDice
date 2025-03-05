@@ -171,11 +171,14 @@ namespace DotDice.Parser
                 .Or(rerollOnceModifier)
                 .Or(rerollCompoundModifier)
                 .Or(explodeModifier)
-                .Or(compoundingModifier)
-                .Or(constantModifier);
+                .Or(compoundingModifier);
 
         // Parser for multiple modifiers
         public static readonly Parser<char, IEnumerable<Modifier>> Modifiers = Modifier.Many();
+
+        public static readonly Parser<char, IEnumerable<Modifier>> ModifiersWithConstant = 
+            Modifiers
+            .Before(constantModifier.Optional());
 
         // Parser for a constant
         public static readonly Parser<char, Roll> Constant =
@@ -208,7 +211,7 @@ namespace DotDice.Parser
                 PositiveInt.Optional(),
                 Char('d'),
                 dieTypeSection,
-                Modifiers
+                ModifiersWithConstant
             )
             .Before(End);
 
