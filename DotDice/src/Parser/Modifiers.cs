@@ -38,7 +38,7 @@ namespace DotDice.Parser
         }
     }
 
-    public record RerollUntilModifier(ComparisonOperator Operator, int Value) : Modifier
+    public record RerollMultipleModifier(ComparisonOperator Operator, int Value) : Modifier
     {
         public override string ToString()
         {

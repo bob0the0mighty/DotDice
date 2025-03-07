@@ -139,7 +139,7 @@ namespace DotDice.Tests
         {
             var result = DiceParser.rerollCompoundModifier.Parse(input);
             Assert.IsTrue(result.Success, "Parser should succeed for valid reroll compound modifier");
-            var modifier = result.Value as RerollUntilModifier;
+            var modifier = result.Value as RerollMultipleModifier;
             Assert.NotNull(modifier);
             Assert.That(modifier.Operator, Is.EqualTo(expectedOp));
             Assert.That(modifier.Value, Is.EqualTo(expectedValue));

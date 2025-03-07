@@ -86,7 +86,7 @@ namespace DotDice.Parser
                 String("rc")
                 .Then(
                     comparisonPoint,
-                    (_, cp) => (Modifier)new RerollUntilModifier(cp.compOp, cp.value)
+                    (_, cp) => (Modifier)new RerollMultipleModifier(cp.compOp, cp.value)
                 )
             );
 
