@@ -32,6 +32,9 @@ jobs:
 
       - name: Run tests with coverage
         run: dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./coverage/
+
+      - name: Show coverage file
+        run: find -name "coverage*"
       
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5.4.0
