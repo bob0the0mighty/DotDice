@@ -23,15 +23,5 @@ jobs:
         run: dotnet tool install --global coverlet.console
 
       - name: Run tests with coverage
-        run: dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./coverage/
-
-      - name: Upload coverage to Codecov
-      # You may pin to the exact commit or the version.
-      # uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574
-        uses: codecov/codecov-action@v5.4.0
-        with:
-          # Comma-separated list of folders to exclude from search.
-          #exclude: # optional
-          fail_ci_if_error: true
-          files: ./coverage/coverage.cobertura.xml
+        run: dotnet test 
                 
