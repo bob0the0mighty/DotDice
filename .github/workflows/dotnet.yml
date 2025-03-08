@@ -25,11 +25,12 @@ jobs:
         run: dotnet tool install --global coverlet.console
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore DotDice/DotDice.csproj
 
       - name: Build 
-        run: dotnet build 
-        
+        run: dotnet build DotDice/DotDice.csproj
+
       - name: Run tests with coverage
-        run: dotnet test 
+        run: dotnet test DotDiceTests/DotDiceTests.csproj
+
                 
