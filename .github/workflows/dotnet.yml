@@ -32,5 +32,11 @@ jobs:
 
       - name: Run tests with coverage
         run: dotnet test DotDiceTests/DotDiceTests.csproj
-
-                
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5.4.0
+        with:
+          # Comma-separated list of folders to exclude from search.
+          #exclude: # optional
+          fail_ci_if_error: true
+          files: ./coverage/coverage.cobertura.xml
