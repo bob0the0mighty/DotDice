@@ -25,13 +25,13 @@ jobs:
         run: dotnet tool install --global coverlet.console
 
       - name: Restore
-        run: dotnet restore DotDice/DotDice.csproj
+        run: dotnet restore
 
       - name: Build 
-        run: dotnet build DotDice/DotDice.csproj
+        run: dotnet build
 
       - name: Run tests with coverage
-        run: dotnet test DotDiceTests/DotDiceTests.csproj
+        run: dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./coverage/
       
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5.4.0
