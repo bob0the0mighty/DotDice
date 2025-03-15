@@ -1,6 +1,7 @@
+using System.Buffers;
 using Pidgin;
-using static Pidgin.Parser;
 using static Pidgin.Parser<char>;
+using static Pidgin.Parser;
 
 namespace DotDice.Parser
 {
@@ -12,7 +13,7 @@ namespace DotDice.Parser
             DecimalNum.Where(x => x > 0);
 
         static Parser<char, T> Tok<T>(Parser<char, T> p)
-            => Try(p).Before(SkipWhitespaces);
+            => SkipWhitespaces.Then(Try(p).Before(SkipWhitespaces));
 
         // Parser for comparison operators
         public static readonly Parser<char, ComparisonOperator> comparisonOperator =
@@ -171,20 +172,17 @@ namespace DotDice.Parser
                 .Or(rerollOnceModifier)
                 .Or(rerollCompoundModifier)
                 .Or(explodeModifier)
-                .Or(compoundingModifier);
+                .Or(compoundingModifier)
+                .Or(constantModifier);
 
         // Parser for multiple modifiers
         public static readonly Parser<char, IEnumerable<Modifier>> Modifiers = Modifier.Many();
-
-        public static readonly Parser<char, IEnumerable<Modifier>> ModifiersWithConstant = 
-            Modifiers
-            .Before(constantModifier.Optional());
 
         // Parser for a constant
         public static readonly Parser<char, Roll> Constant =
             Tok(
                 PositiveInt.Select(x => (Roll)new Constant(x))
-                .Before(End)
+                .Before(SkipWhitespaces)
             );
 
         // Parser for a die type section
@@ -194,31 +192,36 @@ namespace DotDice.Parser
                     .Map(_ => (DieType)new DieType.Fudge())
                 .Or(Char('%')
                     .Map(_ => (DieType)new DieType.Percent()))
-                .Or(DecimalNum
+                .Or(PositiveInt
                     .Map(val => (DieType)new DieType.Basic(val)))
             );
 
         // Parser for a basic roll
         public static readonly Parser<char, Roll> basicRoll =
-            Map(
-                (maybeNum, _, die, mod) =>
-                    (Roll)new BasicRoll(
-                        maybeNum.HasValue ? maybeNum.Value : 1,
-                        die,
-                        mod
-                    )
-                ,
-                PositiveInt.Optional(),
-                Char('d'),
-                dieTypeSection,
-                ModifiersWithConstant
-            )
-            .Before(End);
+            Tok(
+                Map(
+                    (maybeNum, _, die, mod) =>
+                        (Roll)new BasicRoll(
+                            maybeNum.HasValue ? maybeNum.Value : 1,
+                            die,
+                            mod
+                        )
+                    ,
+                    PositiveInt.Optional(),
+                    Char('d'),
+                    dieTypeSection,
+                    Modifiers
+                )
+                .Before(SkipWhitespaces)
+            );
 
         // Top-level parser for any roll
         public static readonly Parser<char, Roll> Roll =
-            (basicRoll
-            .Or(Constant))
-            .Before(End);
+            SkipWhitespaces.Then(
+                basicRoll
+                .Or(Constant)
+                .Before(SkipWhitespaces)  // Skip any trailing whitespace
+                .Before(End)
+        );
     }
 }

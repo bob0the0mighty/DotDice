@@ -12,7 +12,7 @@ namespace DotDice.Tests
         private record UnknownRoll : Roll { }
 
         // Mock Random Number Generator for testing purposes
-        private class MockRandomNumberGenerator : IRandomNumberGenerator<int>
+        public class MockRandomNumberGenerator : IRandomNumberGenerator<int>
         {
             private readonly List<int> _numbers;
             private int _index = 0;
@@ -49,7 +49,7 @@ namespace DotDice.Tests
         }
 
         // Special Random Number Generator that returns the same value repeatedly
-        private class RepeatingRandomNumberGenerator : IRandomNumberGenerator<int>
+        public class RepeatingRandomNumberGenerator : IRandomNumberGenerator<int>
         {
             private readonly int _valueToRepeat;
 
@@ -77,6 +77,40 @@ namespace DotDice.Tests
             {
                 // No-op
             }
+
+            public int GetSeed()
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        // Special Random Number Generator that works with multiple rolls
+        public class MultiRollRandomNumberGenerator : IRandomNumberGenerator<int>
+        {
+            private readonly List<int> _numbers;
+            private int _index = 0;
+
+            public MultiRollRandomNumberGenerator(List<int> numbers)
+            {
+                _numbers = numbers;
+            }
+
+            public int Next()
+            {
+                return _numbers[_index++];
+            }
+
+            public int Next(int maxValue)
+            {
+                return _numbers[_index++];
+            }
+
+            public int Next(int minValue, int maxValue)
+            {
+                return _numbers[_index++];
+            }
+
+            public void SetSeed(int seed) { /* No-op for testing */ }
 
             public int GetSeed()
             {
@@ -913,40 +947,6 @@ namespace DotDice.Tests
                 1,                                        // Expected result (14 > 8, first roll wins)
                 "Opposed Check: First roll 4d6dl1 = 14, Second roll 3d6dl1 = 8, First roll wins"
             );
-        }
-        
-        // Special Random Number Generator that works with multiple rolls
-        private class MultiRollRandomNumberGenerator : IRandomNumberGenerator<int>
-        {
-            private readonly List<int> _numbers;
-            private int _index = 0;
-
-            public MultiRollRandomNumberGenerator(List<int> numbers)
-            {
-                _numbers = numbers;
-            }
-
-            public int Next()
-            {
-                return _numbers[_index++];
-            }
-
-            public int Next(int maxValue)
-            {
-                return _numbers[_index++];
-            }
-
-            public int Next(int minValue, int maxValue)
-            {
-                return _numbers[_index++];
-            }
-
-            public void SetSeed(int seed) { /* No-op for testing */ }
-
-            public int GetSeed()
-            {
-                throw new NotImplementedException();
-            }
         }
     }
 }
