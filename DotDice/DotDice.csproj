@@ -1,12 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <PackageId>DotDice</PackageId>
+    <Version>1.0.0</Version>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageVersion>1.0.0</PackageVersion>
     <IsPackable>true</IsPackable>
+    <Description>
+      A simple dice roller library for .NET. The syntax is similar to dice syntax in many virtual table tops.
+    </Description>
+    <Authors>Bob0The0Mighty</Authors>
+    <RepositoryUrl>https://github.com/bob0the0mighty/DotDice</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>

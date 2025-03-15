@@ -130,8 +130,8 @@ And the following modifiers:
 - `dl#` - Drop lowest # dice
 - `r<#`, `r>#`, `r=#` - Reroll once if less than, greater than, or equal to #
 - `rr<#`, `rr>#`, `rr=#` - Reroll multiple times until condition is no longer met
-- `!` - Explode if equal to the die's maximum value or if condition is met
-- `^` - Compound if equal to the die's maximum value or if condition is met
+- `!=#`, `!>#`, `!<#` - Explode if condition is met
+- `^=#`, `^>#`, `^<#` - Compound if condition is met
 - `+#`, `-#` - Add or subtract a constant value
 - `cs>#`, `cs<#`, `cs=#` - Count successes (greater than, less than, or equal to #)
 - `cf>#`, `cf<#`, `cf=#` - Count failures (greater than, less than, or equal to #)
