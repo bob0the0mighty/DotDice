@@ -37,6 +37,7 @@ jobs:
         run: |
           if [ ! -f "./coverage/coverage.cobertura.xml" ]; then
             echo "Error: Coverage report not found!"
-            echo `ls`
+            echo `pwd`
+            echo `ls -a`
             exit 1
           fi
