@@ -33,13 +33,10 @@ jobs:
       - name: Run tests with coverage
         run: dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./coverage/
 
-      - name: Show coverage file
-        run: find -name "coverage*"
-      
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5.4.0
-        with:
-          # Comma-separated list of folders to exclude from search.
-          #exclude: # optional
-          fail_ci_if_error: true
-          files: ./coverage/coverage.cobertura.xml
+      - name: Verify coverage report
+        run: |
+          if [ ! -f "./coverage/coverage.cobertura.xml" ]; then
+            echo "Error: Coverage report not found!"
+            echo `ls ./coverage`
+            exit 1
+          fi
