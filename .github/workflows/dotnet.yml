@@ -31,13 +31,4 @@ jobs:
         run: dotnet build
 
       - name: Run tests with coverage
-        run: dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./coverage/
-
-      - name: Verify coverage report
-        run: |
-          if [ ! -f "./coverage/coverage.cobertura.xml" ]; then
-            echo "Error: Coverage report not found!"
-            echo `pwd`
-            echo `ls -a`
-            exit 1
-          fi
+        run: dotnet test -c Release --collect:"XPlat Code Coverage"
