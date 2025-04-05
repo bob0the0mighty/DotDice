@@ -1,0 +1,16 @@
+name: Publish to NuGet
+
+on:
+ push:
+   tags:
+     - 'v*' # Trigger on new tags (e.g., v1.0.0)
+
+jobs:
+ pack-and-publish:
+   runs-on: ubuntu-latest
+   steps:
+     - name: Pack
+       run: dotnet pack -c Release -o .
+
+     - name: Push to NuGet
+       run: dotnet nuget push *.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
