@@ -3,7 +3,7 @@ name: Publish to NuGet
 on:
   workflow_run:
     workflows:
-      - Build and Test # Replace with the exact name of your build-and-test workflow
+      - BuildAndTest
     types:
       - completed
 
