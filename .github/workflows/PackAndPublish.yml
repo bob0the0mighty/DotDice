@@ -2,21 +2,55 @@ name: Publish to NuGet
 
 on:
   workflow_run:
-    workflows:
-      - BuildAndTest
+    workflows: ["Build and Test"] # Ensure this matches the 'name' of your first workflow or its filename
     types:
       - completed
 
 jobs:
- pack-and-publish:
-   if: ${{ github.event.workflow_run.conclusion == 'success' && startsWith(github.ref, 'refs/tags/v') }}
-   runs-on: ubuntu-latest
-   steps:
-     - name: Checkout repository
-       uses: actions/checkout@v3
-   
-     - name: Pack
-       run: dotnet pack ./DotDice/DotDice.csproj -c Release -o .
+  pack-and-publish:
+    # This job runs if the "Build and Test" workflow succeeded.
+    # The decision to pack/publish is handled by checking the artifact.
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download v-tag signal artifact
+        uses: actions/download-artifact@v4 # Use a current version like v4
+        with:
+          name: v-tag-signal-artifact
+          path: ${{ github.workspace }}/publish-signal
+        # Important: Continue even if artifact is not found (meaning not a v-tag build)
+        continue-on-error: true
 
-     - name: Push to NuGet
-       run: dotnet nuget push *.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+      - name: Check if triggered by v-tag
+        id: check_v_tag
+        run: |
+          if [[ -f "${{ github.workspace }}/publish-signal/is_v_tag_release.txt" ]]; then
+            echo "V-tag signal artifact found. Proceeding with publish."
+            cat "${{ github.workspace }}/publish-signal/is_v_tag_release.txt"
+            echo "is_v_tag=true" >> $GITHUB_OUTPUT
+          else
+            echo "V-tag signal artifact not found. Skipping publish."
+            echo "is_v_tag=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout repository
+        # Only run if it was a v-tag build
+        if: steps.check_v_tag.outputs.is_v_tag == 'true'
+        uses: actions/checkout@v3
+        with:
+          # Checkout the specific commit that triggered the 'Build and Test' workflow
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup .NET # Added this step as it's likely needed for packing
+        if: steps.check_v_tag.outputs.is_v_tag == 'true'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Pack
+        if: steps.check_v_tag.outputs.is_v_tag == 'true'
+        run: dotnet pack ./DotDice/DotDice.csproj -c Release -o .
+
+      - name: Push to NuGet
+        if: steps.check_v_tag.outputs.is_v_tag == 'true'
+        run: dotnet nuget push *.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}

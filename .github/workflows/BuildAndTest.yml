@@ -2,7 +2,7 @@ name: Build and Test
 
 on:
   push:
-    branches: 
+    branches:
       - main
       - release
     tags:
@@ -13,7 +13,6 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -29,8 +28,22 @@ jobs:
       - name: Restore
         run: dotnet restore
 
-      - name: Build 
+      - name: Build
         run: dotnet build
 
       - name: Run tests with coverage
         run: dotnet test -c Release --collect:"XPlat Code Coverage"
+
+      # New steps to create a signal for v-tag pushes
+      - name: Create v-tag signal file
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          mkdir -p ${{ github.workspace }}/publish-signal
+          echo "Triggered by v-tag: ${{ github.ref }}" > ${{ github.workspace }}/publish-signal/is_v_tag_release.txt
+      - name: Upload v-tag signal artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4 # Use a current version like v4
+        with:
+          name: v-tag-signal-artifact
+          path: ${{ github.workspace }}/publish-signal/is_v_tag_release.txt
+          retention-days: 1 # Optional: keep artifact for a short period
