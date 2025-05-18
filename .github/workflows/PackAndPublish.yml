@@ -13,12 +13,41 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
+      - name: List Artifacts for Triggering Run via API
+        uses: actions/github-script@v7 # Use a current version
+        with:
+          script: |
+            const runId = ${{ github.event.workflow_run.id }};
+            console.log(`Attempting to list artifacts for triggering run ID: ${runId}`);
+            try {
+              const response = await github.rest.actions.listWorkflowRunArtifacts({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: runId,
+              });
+              console.log(`API found ${response.data.artifacts.length} artifact(s) for run ID ${runId}.`);
+              if (response.data.artifacts.length > 0) {
+                console.log('Artifacts found:', JSON.stringify(response.data.artifacts.map(a => ({name: a.name, id: a.id, expired: a.expired})), null, 2));
+                const targetArtifact = response.data.artifacts.find(art => art.name === 'v-tag-signal-artifact');
+                if (targetArtifact) {
+                  console.log(`Target artifact 'v-tag-signal-artifact' (ID: ${targetArtifact.id}) IS listed by the API.`);
+                } else {
+                  core.warning(`Target artifact 'v-tag-signal-artifact' IS NOT listed by the API for run ID ${runId}.`);
+                }
+              } else {
+                core.warning(`No artifacts found via API for run ID ${runId}.`);
+              }
+            } catch (error) {
+              core.error(`Error listing artifacts for run ID ${runId}: ${error.message}`);
+              // Optionally, fail the step if you want to be strict
+              // core.setFailed(`Error listing artifacts: ${error.message}`);
+            }
+
       - name: Download v-tag signal artifact
         uses: actions/download-artifact@v4 # Use a current version like v4
         with:
           name: v-tag-signal-artifact
           path: ${{ github.workspace }}/publish-signal
-        # Important: Continue even if artifact is not found (meaning not a v-tag build)
         continue-on-error: true
 
       - name: Check if triggered by v-tag
