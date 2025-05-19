@@ -13,8 +13,10 @@
     <Authors>Bob0The0Mighty</Authors>
     <RepositoryUrl>https://github.com/bob0the0mighty/DotDice</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Pidgin" Version="3.3.0" />
+    <None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 </Project>
