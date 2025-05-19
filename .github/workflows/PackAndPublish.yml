@@ -2,84 +2,60 @@ name: Publish to NuGet
 
 on:
   workflow_run:
-    workflows: ["Build and Test"] # Ensure this matches the 'name' of your first workflow or its filename
+    workflows: ["Build and Test"]
     types:
       - completed
 
 jobs:
   pack-and-publish:
-    # This job runs if the "Build and Test" workflow succeeded.
-    # The decision to pack/publish is handled by checking the artifact.
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - name: List Artifacts for Triggering Run via API
-        uses: actions/github-script@v7 # Use a current version
+      - name: Check for v-tag signal artifact via API
+        id: check_v_tag_via_api
+        uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const runId = ${{ github.event.workflow_run.id }};
-            console.log(`Attempting to list artifacts for triggering run ID: ${runId}`);
+            const artifactName = 'v-tag-signal-artifact';
+            core.setOutput('is_v_tag', 'false');
+
             try {
               const response = await github.rest.actions.listWorkflowRunArtifacts({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 run_id: runId,
               });
-              console.log(`API found ${response.data.artifacts.length} artifact(s) for run ID ${runId}.`);
-              if (response.data.artifacts.length > 0) {
-                console.log('Artifacts found:', JSON.stringify(response.data.artifacts.map(a => ({name: a.name, id: a.id, expired: a.expired})), null, 2));
-                const targetArtifact = response.data.artifacts.find(art => art.name === 'v-tag-signal-artifact');
-                if (targetArtifact) {
-                  console.log(`Target artifact 'v-tag-signal-artifact' (ID: ${targetArtifact.id}) IS listed by the API.`);
-                } else {
-                  core.warning(`Target artifact 'v-tag-signal-artifact' IS NOT listed by the API for run ID ${runId}.`);
-                }
+
+              const targetArtifact = response.data.artifacts.find(art => art.name === artifactName);
+
+              if (targetArtifact) {
+                core.info(`Signal artifact '${artifactName}' (ID: ${targetArtifact.id}) WAS listed by the API for run ID ${runId}. Proceeding with publish.`);
+                core.setOutput('is_v_tag', 'true');
               } else {
-                core.warning(`No artifacts found via API for run ID ${runId}.`);
+                core.info(`Signal artifact '${artifactName}' was NOT listed by the API for run ID ${runId}. Skipping publish.`);
               }
             } catch (error) {
               core.error(`Error listing artifacts for run ID ${runId}: ${error.message}`);
-              // Optionally, fail the step if you want to be strict
-              // core.setFailed(`Error listing artifacts: ${error.message}`);
             }
 
-      - name: Download v-tag signal artifact
-        uses: actions/download-artifact@v4 # Use a current version like v4
-        with:
-          name: v-tag-signal-artifact
-          path: ${{ github.workspace }}/publish-signal
-        continue-on-error: true
-
-      - name: Check if triggered by v-tag
-        id: check_v_tag
-        run: |
-          if [[ -f "${{ github.workspace }}/publish-signal/is_v_tag_release.txt" ]]; then
-            echo "V-tag signal artifact found. Proceeding with publish."
-            cat "${{ github.workspace }}/publish-signal/is_v_tag_release.txt"
-            echo "is_v_tag=true" >> $GITHUB_OUTPUT
-          else
-            echo "V-tag signal artifact not found. Skipping publish."
-            echo "is_v_tag=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Checkout repository
-        # Only run if it was a v-tag build
-        if: steps.check_v_tag.outputs.is_v_tag == 'true'
+        if: steps.check_v_tag_via_api.outputs.is_v_tag == 'true'
         uses: actions/checkout@v3
         with:
-          # Checkout the specific commit that triggered the 'Build and Test' workflow
           ref: ${{ github.event.workflow_run.head_sha }}
 
-      - name: Setup .NET # Added this step as it's likely needed for packing
-        if: steps.check_v_tag.outputs.is_v_tag == 'true'
+      - name: Setup .NET
+        if: steps.check_v_tag_via_api.outputs.is_v_tag == 'true'
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.x'
 
       - name: Pack
-        if: steps.check_v_tag.outputs.is_v_tag == 'true'
+        if: steps.check_v_tag_via_api.outputs.is_v_tag == 'true'
         run: dotnet pack ./DotDice/DotDice.csproj -c Release -o .
 
       - name: Push to NuGet
-        if: steps.check_v_tag.outputs.is_v_tag == 'true'
+        if: steps.check_v_tag_via_api.outputs.is_v_tag == 'true'
         run: dotnet nuget push *.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
