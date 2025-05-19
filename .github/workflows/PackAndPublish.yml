@@ -6,6 +6,9 @@ on:
     types:
       - completed
 
+permissions:
+  contents: write 
+
 jobs:
   pack-and-publish:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -15,23 +18,19 @@ jobs:
         id: check_v_tag_via_api
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const runId = ${{ github.event.workflow_run.id }};
             const artifactName = 'v-tag-signal-artifact';
-            core.setOutput('is_v_tag', 'false');
-
+            core.setOutput('is_v_tag', 'false'); 
             try {
               const response = await github.rest.actions.listWorkflowRunArtifacts({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 run_id: runId,
               });
-
               const targetArtifact = response.data.artifacts.find(art => art.name === artifactName);
-
               if (targetArtifact) {
-                core.info(`Signal artifact '${artifactName}' (ID: ${targetArtifact.id}) WAS listed by the API for run ID ${runId}. Proceeding with publish.`);
+                core.info(`Signal artifact '${artifactName}' WAS listed by the API for run ID ${runId}. Proceeding with publish.`);
                 core.setOutput('is_v_tag', 'true');
               } else {
                 core.info(`Signal artifact '${artifactName}' was NOT listed by the API for run ID ${runId}. Skipping publish.`);
@@ -40,22 +39,74 @@ jobs:
               core.error(`Error listing artifacts for run ID ${runId}: ${error.message}`);
             }
 
-      - name: Checkout repository
+      - name: Get Release Details
+        id: get_release_details
         if: steps.check_v_tag_via_api.outputs.is_v_tag == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = "${{ github.event.workflow_run.head_sha }}";
+            // !!! IMPORTANT: Confirm your NuGet Package ID !!!
+            // This should match the <PackageId> in your .csproj or the assembly name if not specified.
+            const packageName = 'DotDice'; // Or your actual package ID from your .csproj
+
+            core.info(`Looking for v* tag associated with SHA: ${sha}`);
+            const tagsResponse = await github.rest.repos.listTags({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const matchingTagObject = tagsResponse.data.find(tagObj => tagObj.commit.sha === sha && tagObj.name.startsWith('v'));
+
+            if (matchingTagObject) {
+              const releaseTag = matchingTagObject.name;
+              core.info(`Found release tag: ${releaseTag}`);
+              const packageVersion = releaseTag.startsWith('v') ? releaseTag.substring(1) : releaseTag;
+              core.info(`Derived package version: ${packageVersion}`);
+              
+              core.setOutput('release_tag', releaseTag);
+              core.setOutput('package_version', packageVersion);
+              core.setOutput('package_name', packageName);
+            } else {
+              core.setFailed(`No v* tag found pointing to SHA ${sha}. Cannot determine release details.`);
+            }
+
+      - name: Checkout repository
+        if: steps.check_v_tag_via_api.outputs.is_v_tag == 'true' && steps.get_release_details.outputs.release_tag
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha }} # Checkout the specific commit
 
       - name: Setup .NET
-        if: steps.check_v_tag_via_api.outputs.is_v_tag == 'true'
+        if: steps.check_v_tag_via_api.outputs.is_v_tag == 'true' && steps.get_release_details.outputs.release_tag
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.x'
 
       - name: Pack
-        if: steps.check_v_tag_via_api.outputs.is_v_tag == 'true'
-        run: dotnet pack ./DotDice/DotDice.csproj -c Release -o .
+        if: steps.check_v_tag_via_api.outputs.is_v_tag == 'true' && steps.get_release_details.outputs.release_tag
+        run: |
+          dotnet pack ./DotDice/DotDice.csproj -c Release -o . -p:Version=${{ steps.get_release_details.outputs.package_version }}
+          # The -p:Version=... ensures the package version matches your tag.
 
       - name: Push to NuGet
-        if: steps.check_v_tag_via_api.outputs.is_v_tag == 'true'
+        id: push_nuget_step
+        if: steps.check_v_tag_via_api.outputs.is_v_tag == 'true' && steps.get_release_details.outputs.release_tag
         run: dotnet nuget push *.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+
+      - name: Create GitHub Release
+        if: steps.check_v_tag_via_api.outputs.is_v_tag == 'true' && steps.get_release_details.outputs.release_tag && steps.push_nuget_step.outcome == 'success'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_release_details.outputs.release_tag }}
+          name: Release ${{ steps.get_release_details.outputs.release_tag }}
+          body: |
+            Official release for version ${{ steps.get_release_details.outputs.package_version }}.
+
+            Published to NuGet: https://www.nuget.org/packages/${{ steps.get_release_details.outputs.package_name }}/${{ steps.get_release_details.outputs.package_version }}
+
+            For detailed changes, please see the [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ steps.get_release_details.outputs.release_tag }}/CHANGELOG.md).
+          files: |
+            *.nupkg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This is automatically provided
