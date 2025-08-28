@@ -60,6 +60,8 @@ namespace DotDice.Evaluator
                     return EvaluateBasicRoll(basicRoll);
                 case Constant constant:
                     return constant.Value;
+                case ArithmeticRoll arithmeticRoll:
+                    return EvaluateArithmeticRoll(arithmeticRoll);
                 default:
                     throw new ArgumentException("Unknown roll type", nameof(roll));
             }
@@ -77,6 +79,30 @@ namespace DotDice.Evaluator
 
             // Return the sum of the rolls
             return rolls.Sum(r => r.result);
+        }
+
+        private int EvaluateArithmeticRoll(ArithmeticRoll arithmeticRoll)
+        {
+            int result = 0;
+            
+            foreach (var (operation, roll) in arithmeticRoll.Terms)
+            {
+                int rollValue = Evaluate(roll);
+                
+                switch (operation)
+                {
+                    case ArithmaticOperator.Add:
+                        result += rollValue;
+                        break;
+                    case ArithmaticOperator.Subtract:
+                        result -= rollValue;
+                        break;
+                    default:
+                        throw new ArgumentException($"Unknown arithmetic operator: {operation}");
+                }
+            }
+            
+            return result;
         }
 
         private rollResult RollDie(DieType dieType)

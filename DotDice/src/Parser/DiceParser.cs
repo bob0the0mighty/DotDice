@@ -215,10 +215,86 @@ namespace DotDice.Parser
                 .Before(SkipWhitespaces)
             );
 
+        // Parser for arithmetic operators in roll expressions
+        public static readonly Parser<char, ArithmaticOperator> arithmeticOperator =
+            Tok(
+                Char('+')
+                    .ThenReturn(ArithmaticOperator.Add)
+                .Or(Char('-')
+                    .ThenReturn(ArithmaticOperator.Subtract))
+            );
+
+        // Parser for a single modifier (excluding constant modifiers for arithmetic expressions)
+        public static readonly Parser<char, Modifier> ModifierExcludingConstant =
+            successModifier
+                .Or(failureModifier)
+                .Or(dropHighModifier)
+                .Or(dropLowModifier)
+                .Or(keepHighModifier)
+                .Or(keepLowModifier)
+                .Or(rerollOnceModifier)
+                .Or(rerollCompoundModifier)
+                .Or(explodeModifier)
+                .Or(compoundingModifier);
+
+        // Parser for multiple modifiers (excluding constant modifiers)
+        public static readonly Parser<char, IEnumerable<Modifier>> ModifiersExcludingConstant = ModifierExcludingConstant.Many();
+
+        // Parser for a basic roll without constant modifiers (for use in arithmetic expressions)
+        public static readonly Parser<char, Roll> basicRollWithoutConstant =
+            Tok(
+                Map(
+                    (maybeNum, _, die, mod) =>
+                        (Roll)new BasicRoll(
+                            maybeNum.HasValue ? maybeNum.Value : 1,
+                            die,
+                            mod
+                        )
+                    ,
+                    PositiveInt.Optional(),
+                    Char('d'),
+                    dieTypeSection,
+                    ModifiersExcludingConstant
+                )
+                .Before(SkipWhitespaces)
+            );
+
+        // Parser for a single roll term (basic roll without constant or constant)
+        public static readonly Parser<char, Roll> rollTerm =
+            Tok(basicRollWithoutConstant.Or(Constant));
+
+        // Parser for arithmetic roll expressions
+        public static readonly Parser<char, Roll> arithmeticRoll =
+            Map(
+                (firstRoll, additionalTerms) =>
+                {
+                    if (!additionalTerms.Any())
+                    {
+                        // Single term, return it as-is
+                        return firstRoll;
+                    }
+                    
+                    // Multiple terms, create an ArithmeticRoll
+                    var terms = new List<(ArithmaticOperator, Roll)>
+                    {
+                        (ArithmaticOperator.Add, firstRoll) // First term is implicitly positive
+                    };
+                    terms.AddRange(additionalTerms);
+                    return (Roll)new ArithmeticRoll(terms);
+                },
+                rollTerm,
+                Map(
+                    (op, roll) => (op, roll),
+                    arithmeticOperator,
+                    rollTerm
+                ).Many()
+            );
+
         // Top-level parser for any roll
         public static readonly Parser<char, Roll> Roll =
             SkipWhitespaces.Then(
-                basicRoll
+                Try(arithmeticRoll)
+                .Or(basicRoll)
                 .Or(Constant)
                 .Before(SkipWhitespaces)  // Skip any trailing whitespace
                 .Before(End)

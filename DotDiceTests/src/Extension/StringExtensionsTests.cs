@@ -203,5 +203,43 @@ namespace DotDice.Tests
         }
 
         #endregion
+
+        #region Arithmetic Roll Tests
+
+        [Theory]
+        [TestCaseSource(nameof(ParseRoll_ArithmeticExpressions_TestCases))]
+        public void ParseRoll_ArithmeticExpressions_ReturnsExpectedResult(string input, List<int> randomValues, int expectedResult)
+        {
+            var mockRng = new MockRandomNumberGenerator(randomValues);
+            int result = input.ParseRoll(mockRng);
+            Assert.AreEqual(expectedResult, result, $"Arithmetic roll result should be {expectedResult}");
+        }
+
+        public static IEnumerable<TestCaseData> ParseRoll_ArithmeticExpressions_TestCases()
+        {
+            // Simple arithmetic with constants
+            yield return new TestCaseData("3+4", new List<int> { }, 7);
+            yield return new TestCaseData("10-3", new List<int> { }, 7);
+            
+            // Mix of dice and constants
+            yield return new TestCaseData("1d6+2", new List<int> { 4 }, 6);
+            yield return new TestCaseData("2d6-1", new List<int> { 3, 4 }, 6);
+            yield return new TestCaseData("1d20+5", new List<int> { 15 }, 20);
+            
+            // Multiple dice rolls
+            yield return new TestCaseData("1d6+1d4", new List<int> { 5, 3 }, 8);
+            yield return new TestCaseData("2d6+3d4", new List<int> { 4, 6, 2, 3, 1 }, 16);
+            yield return new TestCaseData("1d20-1d4", new List<int> { 15, 2 }, 13);
+            
+            // Complex expressions like the issue example (using ro<2 instead of rl2)
+            yield return new TestCaseData("3d20+5d6-1d4ro<2+1", new List<int> { 10, 15, 8, 4, 5, 6, 2, 3, 1, 3 }, 51);
+            // 3d20: 10+15+8=33, 5d6: 4+5+6+2+3=20, 1d4ro<2: 1 rerolled to 3, total: 33+20-3+1=51
+            
+            // Multi-step arithmetic
+            yield return new TestCaseData("1d6+2d4-3+1d8", new List<int> { 6, 3, 2, 5 }, 13);
+            // 1d6: 6, 2d4: 3+2=5, constant: -3, 1d8: 5, total: 6+5-3+5=13
+        }
+
+        #endregion
     }
 }
