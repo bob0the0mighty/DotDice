@@ -45,7 +45,7 @@ dotnet format --verify-no-changes
 # Auto-fix formatting issues 
 dotnet format
 
-# The codebase has some existing formatting issues - focus only on new code
+# All formatting issues must be fixed before validation passes (as enforced by dotnet format --verify-no-changes)
 ```
 
 ## Validation Requirements
