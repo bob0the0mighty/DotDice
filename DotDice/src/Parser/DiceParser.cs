@@ -275,9 +275,9 @@ namespace DotDice.Parser
                     }
                     
                     // Multiple terms, create an ArithmeticRoll
-                    var terms = new List<(ArithmaticOperator, Roll)>
+                    var terms = new List<(ArithmeticOperator, Roll)>
                     {
-                        (ArithmaticOperator.Add, firstRoll) // First term is implicitly positive
+                        (ArithmeticOperator.Add, firstRoll) // First term is implicitly positive
                     };
                     terms.AddRange(additionalTerms);
                     return (Roll)new ArithmeticRoll(terms);
