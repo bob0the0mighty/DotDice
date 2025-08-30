@@ -7,7 +7,7 @@ namespace DotDice.Evaluator
     /// </summary>
     public record DieEvent
     {
-        public int Value { get; set; }
+        public int Value { get; init; }
         public DieEventType Type { get; init; }
         public DieType? DieType { get; init; }
         public RollSignificance Significance { get; init; }
