@@ -54,17 +54,7 @@ namespace DotDice.Evaluator
 
         public int Evaluate(Roll roll)
         {
-            switch (roll)
-            {
-                case BasicRoll basicRoll:
-                    return EvaluateBasicRoll(basicRoll);
-                case Constant constant:
-                    return constant.Value;
-                case ArithmeticRoll arithmeticRoll:
-                    return EvaluateArithmeticRoll(arithmeticRoll);
-                default:
-                    throw new ArgumentException("Unknown roll type", nameof(roll));
-            }
+            return EvaluateDetailed(roll).Value;
         }
 
         public DiceEvaluationResult EvaluateDetailed(Roll roll)
@@ -715,7 +705,6 @@ namespace DotDice.Evaluator
                     continue;
                 }
 
-                var totalValue = evt.Value;
                 var currentEvent = evt;
                 int compoundCounter = 0;
                 var compoundEvents = new List<DieEvent> { evt };
@@ -725,17 +714,13 @@ namespace DotDice.Evaluator
                 {
                     // Create compound event
                     currentEvent = RollDieEvent(originalDieType, DieEventType.Compound);
-                    totalValue += currentEvent.Value;
                     compoundEvents.Add(currentEvent);
 
                     compoundCounter++;
                 }
 
-                // Add all compound events
+                // Add all compound events - the sum will be calculated during finalization
                 result.AddRange(compoundEvents);
-
-                // Update the original event with the total compounded value
-                evt.Value = totalValue;
             }
 
             return result;
