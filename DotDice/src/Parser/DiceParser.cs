@@ -216,12 +216,12 @@ namespace DotDice.Parser
             );
 
         // Parser for arithmetic operators in roll expressions
-        public static readonly Parser<char, ArithmaticOperator> arithmeticOperator =
+        public static readonly Parser<char, ArithmeticOperator> arithmeticOperator =
             Tok(
                 Char('+')
-                    .ThenReturn(ArithmaticOperator.Add)
+                    .ThenReturn(ArithmeticOperator.Add)
                 .Or(Char('-')
-                    .ThenReturn(ArithmaticOperator.Subtract))
+                    .ThenReturn(ArithmeticOperator.Subtract))
             );
 
         // Parser for a single modifier (excluding constant modifiers for arithmetic expressions)
