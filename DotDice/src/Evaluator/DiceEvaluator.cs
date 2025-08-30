@@ -67,6 +67,21 @@ namespace DotDice.Evaluator
             }
         }
 
+        public DiceEvaluationResult EvaluateDetailed(Roll roll)
+        {
+            switch (roll)
+            {
+                case BasicRoll basicRoll:
+                    return EvaluateBasicRollDetailed(basicRoll);
+                case Constant constant:
+                    return new DiceEvaluationResult(constant.Value, new List<DieEvent>());
+                case ArithmeticRoll arithmeticRoll:
+                    return EvaluateArithmeticRollDetailed(arithmeticRoll);
+                default:
+                    throw new ArgumentException("Unknown roll type", nameof(roll));
+            }
+        }
+
         private int EvaluateBasicRoll(BasicRoll basicRoll)
         {
             // Generate random numbers for each die
@@ -79,6 +94,24 @@ namespace DotDice.Evaluator
 
             // Return the sum of the rolls
             return rolls.Sum(r => r.result);
+        }
+
+        private DiceEvaluationResult EvaluateBasicRollDetailed(BasicRoll basicRoll)
+        {
+            // Generation Phase: Create initial events
+            var events = Enumerable.Range(0, basicRoll.NumberOfDice)
+                .Select(_ => RollDieEvent(basicRoll.DieType, DieEventType.Initial))
+                .ToList();
+
+            // Apply modifiers in the proper order
+            events = ApplyModifiersDetailed(events, basicRoll.Modifiers, basicRoll.DieType);
+
+            // Calculate final value from events that are not dropped or discarded
+            var finalValue = events
+                .Where(e => e.Status != DieStatus.Dropped && e.Status != DieStatus.Discarded)
+                .Sum(e => e.Value);
+
+            return new DiceEvaluationResult(finalValue, events);
         }
 
         private int EvaluateArithmeticRoll(ArithmeticRoll arithmeticRoll)
@@ -105,6 +138,33 @@ namespace DotDice.Evaluator
             return result;
         }
 
+        private DiceEvaluationResult EvaluateArithmeticRollDetailed(ArithmeticRoll arithmeticRoll)
+        {
+            int result = 0;
+            var allEvents = new List<DieEvent>();
+            
+            foreach (var (operation, roll) in arithmeticRoll.Terms)
+            {
+                var rollResult = EvaluateDetailed(roll);
+                
+                switch (operation)
+                {
+                    case ArithmeticOperator.Add:
+                        result += rollResult.Value;
+                        break;
+                    case ArithmeticOperator.Subtract:
+                        result -= rollResult.Value;
+                        break;
+                    default:
+                        throw new ArgumentException($"Unknown arithmetic operator: {operation}");
+                }
+                
+                allEvents.AddRange(rollResult.Events);
+            }
+            
+            return new DiceEvaluationResult(result, allEvents);
+        }
+
         private rollResult RollDie(DieType dieType)
         {
             return dieType switch
@@ -114,6 +174,45 @@ namespace DotDice.Evaluator
                 DieType.Percent => new(_rng.Next(1, 101), dieType),
                 DieType.Fudge => new(_rng.Next(-1, 2), dieType),
                 _ => throw new ArgumentException("Unknown die type", nameof(dieType))
+            };
+        }
+
+        private DieEvent RollDieEvent(DieType dieType, DieEventType eventType)
+        {
+            var value = dieType switch
+            {
+                DieType.Basic roll => _rng.Next(1, roll.sides + 1),
+                DieType.Reroll roll => _rng.Next(1, roll.sides + 1),
+                DieType.Percent => _rng.Next(1, 101),
+                DieType.Fudge => _rng.Next(-1, 2),
+                _ => throw new ArgumentException("Unknown die type", nameof(dieType))
+            };
+
+            var significance = GetRollSignificance(value, dieType);
+
+            return new DieEvent
+            {
+                Value = value,
+                Type = eventType,
+                Significance = significance,
+                Status = DieStatus.Kept,
+                Success = SuccessStatus.Neutral
+            };
+        }
+
+        private static RollSignificance GetRollSignificance(int value, DieType dieType)
+        {
+            return dieType switch
+            {
+                DieType.Basic basic when value == 1 => RollSignificance.Minimum,
+                DieType.Basic basic when value == basic.sides => RollSignificance.Maximum,
+                DieType.Reroll reroll when value == 1 => RollSignificance.Minimum,
+                DieType.Reroll reroll when value == reroll.sides => RollSignificance.Maximum,
+                DieType.Percent when value == 1 => RollSignificance.Minimum,
+                DieType.Percent when value == 100 => RollSignificance.Maximum,
+                DieType.Fudge when value == -1 => RollSignificance.Minimum,
+                DieType.Fudge when value == 1 => RollSignificance.Maximum,
+                _ => RollSignificance.None
             };
         }
 
@@ -153,6 +252,65 @@ namespace DotDice.Evaluator
                 }
             }
             return rolls;
+        }
+
+        private List<DieEvent> ApplyModifiersDetailed(List<DieEvent> events, IEnumerable<Modifier> modifiers, DieType originalDieType)
+        {
+            // Phase 1: Generation Phase - Creates Events 
+            // Handle Initial rolls (already done), Reroll, then Explosion/Compound
+            foreach (var modifier in modifiers)
+            {
+                switch (modifier)
+                {
+                    case RerollOnceModifier rerollOnceModifier:
+                        events = ApplyRerollOnceModifierDetailed(events, rerollOnceModifier, originalDieType);
+                        break;
+                    case RerollMultipleModifier rerollUntilModifier:
+                        events = ApplyRerollUntilModifierDetailed(events, rerollUntilModifier, originalDieType);
+                        break;
+                    case ExplodeModifier explodeModifier:
+                        events = ApplyExplodeModifierDetailed(events, explodeModifier, originalDieType);
+                        break;
+                    case CompoundingModifier compoundingModifier:
+                        events = ApplyCompoundingModifierDetailed(events, compoundingModifier, originalDieType);
+                        break;
+                }
+            }
+
+            // Phase 2: Modification Phase - Updates Events
+            // Handle Keep/Drop modifiers by updating the Status property
+            foreach (var modifier in modifiers)
+            {
+                switch (modifier)
+                {
+                    case KeepModifier keepModifier:
+                        ApplyKeepModifierDetailed(events, keepModifier);
+                        break;
+                    case DropModifier dropModifier:
+                        ApplyDropModifierDetailed(events, dropModifier);
+                        break;
+                }
+            }
+
+            // Phase 3: Finalization Phase - Reads Events
+            // Apply Success/Failure interpretations and handle constants
+            foreach (var modifier in modifiers)
+            {
+                switch (modifier)
+                {
+                    case SuccessModifier successModifier:
+                        events = ApplySuccessModifierDetailed(events, successModifier);
+                        break;
+                    case FailureModifier failureModifier:
+                        events = ApplyFailureModifierDetailed(events, failureModifier);
+                        break;
+                    case ConstantModifier constantModifier:
+                        events = ApplyConstantModifierDetailed(events, constantModifier);
+                        break;
+                }
+            }
+
+            return events;
         }
 
         /// <summary>
@@ -420,5 +578,304 @@ namespace DotDice.Evaluator
             // Return a single Success roll with the negative count of failures
             return new List<rollResult> { new rollResult(-failureCount, new DieType.Success()) };
         }
+
+        #region Detailed Modifier Methods
+
+        private List<DieEvent> ApplyRerollOnceModifierDetailed(List<DieEvent> events, RerollOnceModifier rerollOnceModifier, DieType originalDieType)
+        {
+            var result = new List<DieEvent>(events);
+
+            for (int i = 0; i < events.Count; i++)
+            {
+                var evt = events[i];
+
+                // Skip non-rollable events
+                if (evt.Status == DieStatus.Discarded || 
+                    !ShouldProcessEvent(evt))
+                {
+                    continue;
+                }
+
+                // Check if this event should be rerolled
+                if (Compare(evt.Value, rerollOnceModifier.Operator, rerollOnceModifier.Value))
+                {
+                    // Mark the original as discarded
+                    evt.Status = DieStatus.Discarded;
+
+                    // Create a reroll event
+                    var rerollEvent = RollDieEvent(originalDieType, DieEventType.Reroll);
+                    result.Add(rerollEvent);
+                }
+            }
+
+            return result;
+        }
+
+        private List<DieEvent> ApplyRerollUntilModifierDetailed(List<DieEvent> events, RerollMultipleModifier rerollUntilModifier, DieType originalDieType)
+        {
+            var result = new List<DieEvent>(events);
+
+            for (int i = 0; i < events.Count; i++)
+            {
+                var evt = events[i];
+
+                // Skip non-rollable events
+                if (evt.Status == DieStatus.Discarded || 
+                    !ShouldProcessEvent(evt))
+                {
+                    continue;
+                }
+
+                var currentEvent = evt;
+                var maxRerolls = 10;
+                
+                while (maxRerolls-- > 0 && 
+                       Compare(currentEvent.Value, rerollUntilModifier.Operator, rerollUntilModifier.Value))
+                {
+                    // Mark current as discarded
+                    currentEvent.Status = DieStatus.Discarded;
+
+                    // Create a reroll event
+                    currentEvent = RollDieEvent(originalDieType, DieEventType.Reroll);
+                    result.Add(currentEvent);
+                }
+            }
+
+            return result;
+        }
+
+        private List<DieEvent> ApplyExplodeModifierDetailed(List<DieEvent> events, ExplodeModifier explodeModifier, DieType originalDieType)
+        {
+            var result = new List<DieEvent>(events);
+
+            // Process each original event for explosions
+            for (int i = 0; i < events.Count; i++)
+            {
+                var evt = events[i];
+
+                // Skip non-rollable events
+                if (evt.Status == DieStatus.Discarded || 
+                    !ShouldProcessEvent(evt))
+                {
+                    continue;
+                }
+
+                var currentEvent = evt;
+                int explosionCounter = 0;
+
+                while (explosionCounter < MaxExplosions &&
+                       Compare(currentEvent.Value, explodeModifier.Operator, explodeModifier.Value))
+                {
+                    // Create explosion event
+                    currentEvent = RollDieEvent(originalDieType, DieEventType.Explosion);
+                    result.Add(currentEvent);
+
+                    explosionCounter++;
+                }
+            }
+
+            return result;
+        }
+
+        private List<DieEvent> ApplyCompoundingModifierDetailed(List<DieEvent> events, CompoundingModifier compoundingModifier, DieType originalDieType)
+        {
+            var result = new List<DieEvent>();
+
+            foreach (var evt in events)
+            {
+                // Skip non-rollable events
+                if (evt.Status == DieStatus.Discarded || 
+                    !ShouldProcessEvent(evt))
+                {
+                    result.Add(evt);
+                    continue;
+                }
+
+                var totalValue = evt.Value;
+                var currentEvent = evt;
+                int compoundCounter = 0;
+                var compoundEvents = new List<DieEvent> { evt };
+
+                while (compoundCounter < MaxCompounds &&
+                       Compare(currentEvent.Value, compoundingModifier.Operator, compoundingModifier.Value))
+                {
+                    // Create compound event
+                    currentEvent = RollDieEvent(originalDieType, DieEventType.Compound);
+                    totalValue += currentEvent.Value;
+                    compoundEvents.Add(currentEvent);
+
+                    compoundCounter++;
+                }
+
+                // Add all compound events
+                result.AddRange(compoundEvents);
+
+                // Update the original event with the total compounded value
+                evt.Value = totalValue;
+            }
+
+            return result;
+        }
+
+        private void ApplyKeepModifierDetailed(List<DieEvent> events, KeepModifier keepModifier)
+        {
+            // Only process rollable events that aren't already discarded
+            var rollableEvents = events
+                .Where(e => e.Status != DieStatus.Discarded && ShouldProcessEvent(e))
+                .ToList();
+
+            if (rollableEvents.Count <= keepModifier.Count)
+            {
+                // Keep all if we have fewer than or equal to the keep count
+                return;
+            }
+
+            var eventsToKeep = keepModifier.KeepHighest
+                ? rollableEvents.OrderByDescending(e => e.Value).Take(keepModifier.Count)
+                : rollableEvents.OrderBy(e => e.Value).Take(keepModifier.Count);
+
+            var keptEventSet = new HashSet<DieEvent>(eventsToKeep);
+
+            // Mark non-kept rollable events as dropped
+            foreach (var evt in rollableEvents)
+            {
+                if (!keptEventSet.Contains(evt))
+                {
+                    evt.Status = DieStatus.Dropped;
+                }
+            }
+        }
+
+        private void ApplyDropModifierDetailed(List<DieEvent> events, DropModifier dropModifier)
+        {
+            // Only process rollable events that aren't already discarded
+            var rollableEvents = events
+                .Where(e => e.Status != DieStatus.Discarded && ShouldProcessEvent(e))
+                .ToList();
+
+            var eventsToDrop = dropModifier.DropHighest
+                ? rollableEvents.OrderByDescending(e => e.Value).Take(dropModifier.Count)
+                : rollableEvents.OrderBy(e => e.Value).Take(dropModifier.Count);
+
+            foreach (var evt in eventsToDrop)
+            {
+                evt.Status = DieStatus.Dropped;
+            }
+        }
+
+        private List<DieEvent> ApplySuccessModifierDetailed(List<DieEvent> events, SuccessModifier successModifier)
+        {
+            // Update success status for rollable events
+            foreach (var evt in events)
+            {
+                if (evt.Status != DieStatus.Discarded && 
+                    evt.Status != DieStatus.Dropped &&
+                    ShouldProcessEvent(evt))
+                {
+                    if (Compare(evt.Value, successModifier.Operator, successModifier.Value))
+                    {
+                        evt.Success = SuccessStatus.Success;
+                    }
+                }
+            }
+
+            // Count successes and replace with a single success event
+            var successCount = events.Count(e => e.Success == SuccessStatus.Success);
+            
+            return new List<DieEvent>
+            {
+                new DieEvent
+                {
+                    Value = successCount,
+                    Type = DieEventType.Initial,
+                    Significance = RollSignificance.None,
+                    Status = DieStatus.Kept,
+                    Success = SuccessStatus.Neutral
+                }
+            };
+        }
+
+        private List<DieEvent> ApplyFailureModifierDetailed(List<DieEvent> events, FailureModifier failureModifier)
+        {
+            // Update failure status for rollable events
+            foreach (var evt in events)
+            {
+                if (evt.Status != DieStatus.Discarded && 
+                    evt.Status != DieStatus.Dropped &&
+                    ShouldProcessEvent(evt))
+                {
+                    if (Compare(evt.Value, failureModifier.Operator, failureModifier.Value))
+                    {
+                        evt.Success = SuccessStatus.Failure;
+                    }
+                }
+            }
+
+            // Count failures and return as negative
+            var failureCount = events.Count(e => e.Success == SuccessStatus.Failure);
+            
+            return new List<DieEvent>
+            {
+                new DieEvent
+                {
+                    Value = -failureCount,
+                    Type = DieEventType.Initial,
+                    Significance = RollSignificance.None,
+                    Status = DieStatus.Kept,
+                    Success = SuccessStatus.Neutral
+                }
+            };
+        }
+
+        private List<DieEvent> ApplyConstantModifierDetailed(List<DieEvent> events, ConstantModifier constantModifier)
+        {
+            var value = constantModifier.Operator switch
+            {
+                ArithmeticOperator.Add => constantModifier.Value,
+                ArithmeticOperator.Subtract => -constantModifier.Value,
+                _ => throw new InvalidEnumArgumentException("Invalid ArithmeticOperator")
+            };
+
+            var constantEvent = new DieEvent
+            {
+                Value = value,
+                Type = DieEventType.Initial,
+                Significance = RollSignificance.None,
+                Status = DieStatus.Kept,
+                Success = SuccessStatus.Neutral
+            };
+
+            return events.Append(constantEvent).ToList();
+        }
+
+        private static bool ShouldProcessEvent(DieEvent evt)
+        {
+            // Process events that represent actual dice rolls (not constants)
+            // Constants would have Type = Initial but represent +N modifiers 
+            return evt.Type == DieEventType.Initial || 
+                   evt.Type == DieEventType.Reroll || 
+                   evt.Type == DieEventType.Explosion || 
+                   evt.Type == DieEventType.Compound;
+        }
+
+        private static DieType GetDieTypeFromEvent(DieEvent evt)
+        {
+            // This is a simplified approach - in a real implementation, we'd need to track the original die type
+            // For now, we'll assume basic dice of reasonable sizes based on common values
+            return evt.Value switch
+            {
+                >= 1 and <= 4 => new DieType.Basic(4),
+                >= 1 and <= 6 => new DieType.Basic(6),
+                >= 1 and <= 8 => new DieType.Basic(8),
+                >= 1 and <= 10 => new DieType.Basic(10),
+                >= 1 and <= 12 => new DieType.Basic(12),
+                >= 1 and <= 20 => new DieType.Basic(20),
+                >= 1 and <= 100 => new DieType.Percent(),
+                >= -1 and <= 1 => new DieType.Fudge(),
+                _ => new DieType.Basic(20) // Default fallback
+            };
+        }
+
+        #endregion
     }
 }

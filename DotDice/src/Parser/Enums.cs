@@ -20,6 +20,36 @@ namespace DotDice.Parser
         Descending
     }
 
+    // Event-driven model enums
+    public enum DieEventType 
+    { 
+        Initial, 
+        Reroll, 
+        Explosion, 
+        Compound 
+    }
+
+    public enum DieStatus 
+    { 
+        Kept, 
+        Dropped, 
+        Discarded 
+    }
+
+    public enum RollSignificance 
+    { 
+        None, 
+        Minimum, 
+        Maximum 
+    }
+
+    public enum SuccessStatus 
+    { 
+        Neutral, 
+        Success, 
+        Failure 
+    }
+
     public record DieType
     {
         public record Basic(int sides) : DieType;
