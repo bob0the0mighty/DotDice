@@ -14,7 +14,7 @@ namespace DotDice.Tests
         {
             var mockRng = new MockRandomNumberGenerator(randomValues);
             int result = input.ParseRoll(mockRng);
-            Assert.AreEqual(expectedResult, result, $"Roll result should be {expectedResult}");
+            Assert.That(result, Is.EqualTo(expectedResult), $"Roll result should be {expectedResult}");
         }
 
         public static IEnumerable<TestCaseData> ParseRoll_BasicRolls_TestCases()
