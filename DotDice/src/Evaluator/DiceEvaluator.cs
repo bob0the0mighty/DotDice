@@ -151,9 +151,33 @@ namespace DotDice.Evaluator
                 {
                     case ArithmeticOperator.Add:
                         result += rollResult.Value;
+                        // For constants (like +3), create an event if there are no events
+                        if (!rollResult.Events.Any() && roll is Constant constantRoll)
+                        {
+                            allEvents.Add(new DieEvent
+                            {
+                                Value = constantRoll.Value,
+                                Type = DieEventType.Initial,
+                                Significance = RollSignificance.None,
+                                Status = DieStatus.Kept,
+                                Success = SuccessStatus.Neutral
+                            });
+                        }
                         break;
                     case ArithmeticOperator.Subtract:
                         result -= rollResult.Value;
+                        // For constants (like -3), create an event if there are no events
+                        if (!rollResult.Events.Any() && roll is Constant constantRoll2)
+                        {
+                            allEvents.Add(new DieEvent
+                            {
+                                Value = -constantRoll2.Value,
+                                Type = DieEventType.Initial,
+                                Significance = RollSignificance.None,
+                                Status = DieStatus.Kept,
+                                Success = SuccessStatus.Neutral
+                            });
+                        }
                         break;
                     default:
                         throw new ArgumentException($"Unknown arithmetic operator: {operation}");
