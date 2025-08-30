@@ -35,4 +35,14 @@ namespace DotDice.Parser
             return $"Constant: Value={Value}";
         }
     }
+
+    public record ArithmeticRoll(
+        List<(ArithmeticOperator Operator, Roll Roll)> Terms
+    ) : Roll
+    {
+        public override string ToString()
+        {
+            return $"ArithmeticRoll: Terms=[{string.Join(", ", Terms.Select(t => $"{t.Operator} {t.Roll}"))}]";
+        }
+    }
 }

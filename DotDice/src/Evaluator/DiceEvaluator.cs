@@ -60,6 +60,8 @@ namespace DotDice.Evaluator
                     return EvaluateBasicRoll(basicRoll);
                 case Constant constant:
                     return constant.Value;
+                case ArithmeticRoll arithmeticRoll:
+                    return EvaluateArithmeticRoll(arithmeticRoll);
                 default:
                     throw new ArgumentException("Unknown roll type", nameof(roll));
             }
@@ -77,6 +79,30 @@ namespace DotDice.Evaluator
 
             // Return the sum of the rolls
             return rolls.Sum(r => r.result);
+        }
+
+        private int EvaluateArithmeticRoll(ArithmeticRoll arithmeticRoll)
+        {
+            int result = 0;
+            
+            foreach (var (operation, roll) in arithmeticRoll.Terms)
+            {
+                int rollValue = Evaluate(roll);
+                
+                switch (operation)
+                {
+                    case ArithmeticOperator.Add:
+                        result += rollValue;
+                        break;
+                    case ArithmeticOperator.Subtract:
+                        result -= rollValue;
+                        break;
+                    default:
+                        throw new ArgumentException($"Unknown arithmetic operator: {operation}");
+                }
+            }
+            
+            return result;
         }
 
         private rollResult RollDie(DieType dieType)
@@ -236,9 +262,9 @@ namespace DotDice.Evaluator
             //Constant should be applied after everything else, and just add a value to the total of all rolls, not individual rolls
             var value = constantModifier.Operator switch
             {
-                ArithmaticOperator.Add => constantModifier.Value,
-                ArithmaticOperator.Subtract => -constantModifier.Value,
-                _ => throw new InvalidEnumArgumentException("Invalid ArithmaticOperator")
+                ArithmeticOperator.Add => constantModifier.Value,
+                ArithmeticOperator.Subtract => -constantModifier.Value,
+                _ => throw new InvalidEnumArgumentException("Invalid ArithmeticOperator")
             };
             return rolls.Append(new(value, new DieType.Constant()))
                 .ToList();

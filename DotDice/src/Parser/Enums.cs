@@ -8,7 +8,7 @@ namespace DotDice.Parser
         LessThan
     }
 
-    public enum ArithmaticOperator
+    public enum ArithmeticOperator
     {
         Add,
         Subtract
