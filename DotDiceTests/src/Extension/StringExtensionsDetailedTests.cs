@@ -8,47 +8,13 @@ namespace DotDice.Tests
     [TestFixture]
     public class StringExtensionsDetailedTests
     {
-        public class MockRandomNumberGenerator : IRandomNumberGenerator<int>
-        {
-            private readonly List<int> _numbers;
-            private int _index = 0;
 
-            public MockRandomNumberGenerator(List<int> numbers)
-            {
-                _numbers = numbers;
-            }
-
-            public int Next()
-            {
-                return _numbers[_index++];
-            }
-
-            public int Next(int maxValue)
-            {
-                return _numbers[_index++];
-            }
-
-            public int Next(int minValue, int maxValue)
-            {
-                return _numbers[_index++];
-            }
-
-            public void SetSeed(int seed)
-            {
-                throw new NotImplementedException();
-            }
-
-            public int GetSeed()
-            {
-                throw new NotImplementedException();
-            }
-        }
 
         [Test]
         public void ParseRollDetailed_BasicRoll_ReturnsCorrectResult()
         {
             // Arrange
-            var rng = new MockRandomNumberGenerator(new List<int> { 4, 2 });
+            var rng = new TestHelpers.MockRandomNumberGenerator(new List<int> { 4, 2 });
 
             // Act
             var result = "2d6".ParseRollDetailed(rng);
@@ -66,7 +32,7 @@ namespace DotDice.Tests
         public void ParseRollDetailed_WithModifiers_ReturnsCorrectResult()
         {
             // Arrange
-            var rng = new MockRandomNumberGenerator(new List<int> { 1, 5, 3 });
+            var rng = new TestHelpers.MockRandomNumberGenerator(new List<int> { 1, 5, 3 });
 
             // Act - rolling 2d6, reroll values less than 2 (first die becomes 3)
             var result = "2d6ro<2".ParseRollDetailed(rng);
@@ -92,7 +58,7 @@ namespace DotDice.Tests
         public void ParseRollDetailed_ExplodingDice_ReturnsCorrectResult()
         {
             // Arrange
-            var rng = new MockRandomNumberGenerator(new List<int> { 6, 4, 3 });
+            var rng = new TestHelpers.MockRandomNumberGenerator(new List<int> { 6, 4, 3 });
 
             // Act - 2d6, explode on 6
             var result = "2d6!=6".ParseRollDetailed(rng);
@@ -119,7 +85,7 @@ namespace DotDice.Tests
         public void ParseRollDetailed_KeepHighest_ReturnsCorrectResult()
         {
             // Arrange
-            var rng = new MockRandomNumberGenerator(new List<int> { 2, 6, 4 });
+            var rng = new TestHelpers.MockRandomNumberGenerator(new List<int> { 2, 6, 4 });
 
             // Act - 3d6, keep highest 2
             var result = "3d6kh2".ParseRollDetailed(rng);
@@ -155,7 +121,7 @@ namespace DotDice.Tests
         public void ParseRollDetailed_WithConstantModifier_ReturnsCorrectResult()
         {
             // Arrange
-            var rng = new MockRandomNumberGenerator(new List<int> { 4 });
+            var rng = new TestHelpers.MockRandomNumberGenerator(new List<int> { 4 });
 
             // Act
             var result = "1d6+3".ParseRollDetailed(rng);
