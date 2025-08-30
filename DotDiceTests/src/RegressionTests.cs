@@ -8,7 +8,42 @@ namespace DotDice.Tests
     [TestFixture]
     public class BackwardCompatibilityAndRegressionTests
     {
-        // Use shared MockRandomNumberGenerator from TestUtils
+        // Mock Random Number Generator for testing purposes
+        public class MockRandomNumberGenerator : IRandomNumberGenerator<int>
+        {
+            private readonly List<int> _numbers;
+            private int _index = 0;
+
+            public MockRandomNumberGenerator(List<int> numbers)
+            {
+                _numbers = numbers;
+            }
+
+            public int Next()
+            {
+                return _numbers[_index++];
+            }
+
+            public int Next(int maxValue)
+            {
+                return _numbers[_index++];
+            }
+
+            public int Next(int minValue, int maxValue)
+            {
+                return _numbers[_index++];
+            }
+
+            public void SetSeed(int seed)
+            {
+                throw new NotImplementedException();
+            }
+
+            public int GetSeed()
+            {
+                throw new NotImplementedException();
+            }
+        }
         #region Backward Compatibility Tests
 
         [Test]
