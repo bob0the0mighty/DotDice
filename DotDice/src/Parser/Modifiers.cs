@@ -77,11 +77,11 @@ namespace DotDice.Parser
         }
     }
 
-    public record ConstantModifier(ArithmaticOperator Operator, int Value) : Modifier
+    public record ConstantModifier(ArithmeticOperator Operator, int Value) : Modifier
     {
         public override string ToString()
         {
-            var term = Operator == ArithmaticOperator.Add ? "to" : "from";
+            var term = Operator == ArithmeticOperator.Add ? "to" : "from";
             return $"{Operator} {Value} {term} final roll";
         }
     }

@@ -155,7 +155,7 @@ namespace DotDice.Parser
                     PositiveInt,
                     (opChar, val) =>
                     {
-                        var op = opChar == '+' ? ArithmaticOperator.Add : ArithmaticOperator.Subtract;
+                        var op = opChar == '+' ? ArithmeticOperator.Add : ArithmeticOperator.Subtract;
                         return (Modifier)new ConstantModifier(op, val);
                     }
                 )

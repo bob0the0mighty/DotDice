@@ -396,7 +396,7 @@ namespace DotDice.Tests
             Assert.IsTrue(modifiers[2] is ConstantModifier);
             
             var constMod = modifiers[2] as ConstantModifier;
-            Assert.That(constMod?.Operator, Is.EqualTo(ArithmaticOperator.Add));
+            Assert.That(constMod?.Operator, Is.EqualTo(ArithmeticOperator.Add));
             Assert.That(constMod?.Value, Is.EqualTo(5));
         }
 
@@ -421,7 +421,7 @@ namespace DotDice.Tests
             Assert.IsTrue(modifiers[5] is ConstantModifier);
             
             var constMod = modifiers[5] as ConstantModifier;
-            Assert.That(constMod?.Operator, Is.EqualTo(ArithmaticOperator.Subtract));
+            Assert.That(constMod?.Operator, Is.EqualTo(ArithmeticOperator.Subtract));
             Assert.That(constMod?.Value, Is.EqualTo(7));
         }
 
@@ -567,7 +567,7 @@ namespace DotDice.Tests
             
             var constMod = modifiers[0] as ConstantModifier;
             Assert.NotNull(constMod);
-            Assert.That(constMod.Operator, Is.EqualTo(ArithmaticOperator.Add));
+            Assert.That(constMod.Operator, Is.EqualTo(ArithmeticOperator.Add));
             Assert.That(constMod.Value, Is.EqualTo(5));
         }
 
@@ -725,7 +725,7 @@ namespace DotDice.Tests
             
             // First term should be the complex dice roll
             var firstTerm = arithmeticRoll.Terms[0];
-            Assert.That(firstTerm.Operator, Is.EqualTo(ArithmaticOperator.Add));
+            Assert.That(firstTerm.Operator, Is.EqualTo(ArithmeticOperator.Add));
             var firstRoll = firstTerm.Roll as BasicRoll;
             Assert.NotNull(firstRoll);
             Assert.That(firstRoll.NumberOfDice, Is.EqualTo(5));
@@ -755,7 +755,7 @@ namespace DotDice.Tests
             
             // Second term should be the constant
             var secondTerm = arithmeticRoll.Terms[1];
-            Assert.That(secondTerm.Operator, Is.EqualTo(ArithmaticOperator.Add));
+            Assert.That(secondTerm.Operator, Is.EqualTo(ArithmeticOperator.Add));
             var secondRoll = secondTerm.Roll as Constant;
             Assert.NotNull(secondRoll);
             Assert.That(secondRoll.Value, Is.EqualTo(7));

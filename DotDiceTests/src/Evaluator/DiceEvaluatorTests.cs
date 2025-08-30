@@ -535,8 +535,8 @@ namespace DotDice.Tests
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithConstantModifier_TestCases()
         {
-            yield return new TestCaseData(new List<int> { 5, 2 }, new List<Modifier> { new ConstantModifier(ArithmaticOperator.Add, 3) }, 10);
-            yield return new TestCaseData(new List<int> { 5, 2 }, new List<Modifier> { new ConstantModifier(ArithmaticOperator.Subtract, 3) }, 4);
+            yield return new TestCaseData(new List<int> { 5, 2 }, new List<Modifier> { new ConstantModifier(ArithmeticOperator.Add, 3) }, 10);
+            yield return new TestCaseData(new List<int> { 5, 2 }, new List<Modifier> { new ConstantModifier(ArithmeticOperator.Subtract, 3) }, 4);
         }
 
         [Theory]
@@ -551,8 +551,8 @@ namespace DotDice.Tests
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithConstantModifierAndAnotherModifier_TestCases()
         {
-            yield return new TestCaseData(new List<int> { 5, 2 }, new List<Modifier> { new KeepModifier(1, true), new ConstantModifier(ArithmaticOperator.Add, 6) }, 11);
-            yield return new TestCaseData(new List<int> { 5, 2 }, new List<Modifier> { new ConstantModifier(ArithmaticOperator.Add, 6), new KeepModifier(1, true) }, 11);
+            yield return new TestCaseData(new List<int> { 5, 2 }, new List<Modifier> { new KeepModifier(1, true), new ConstantModifier(ArithmeticOperator.Add, 6) }, 11);
+            yield return new TestCaseData(new List<int> { 5, 2 }, new List<Modifier> { new ConstantModifier(ArithmeticOperator.Add, 6), new KeepModifier(1, true) }, 11);
         }
 
         [Test]
@@ -669,7 +669,7 @@ namespace DotDice.Tests
             yield return new TestCaseData(
                 new MockRandomNumberGenerator(new List<int> { 18 }),
                 new BasicRoll(1, new DieType.Basic(20), new List<Modifier> { 
-                    new ConstantModifier(ArithmaticOperator.Add, 5) 
+                    new ConstantModifier(ArithmeticOperator.Add, 5) 
                 }),
                 23,
                 "D&D Attack with Modifier: 1d20+5 (18+5) = 23"
@@ -679,7 +679,7 @@ namespace DotDice.Tests
             yield return new TestCaseData(
                 new MockRandomNumberGenerator(new List<int> { 4, 6, 5, 3, 20 }),
                 new BasicRoll(4, new DieType.Basic(6), new List<Modifier> { 
-                    new ConstantModifier(ArithmaticOperator.Add, 3) 
+                    new ConstantModifier(ArithmeticOperator.Add, 3) 
                 }),
                 21,
                 "D&D Critical Hit: 4d6+3 (4,6,5,3+3) = 21"
@@ -710,7 +710,7 @@ namespace DotDice.Tests
             yield return new TestCaseData(
                 new MockRandomNumberGenerator(new List<int> { 1, -1, 0, 1 }),
                 new BasicRoll(4, new DieType.Fudge(), new List<Modifier> { 
-                    new ConstantModifier(ArithmaticOperator.Add, 2) 
+                    new ConstantModifier(ArithmeticOperator.Add, 2) 
                 }),
                 3,
                 "FATE/Fudge: 4dF+2 (1,-1,0,1+2) = 3"
@@ -722,7 +722,7 @@ namespace DotDice.Tests
                 new BasicRoll(2, new DieType.Basic(20), new List<Modifier> { 
                     new KeepModifier(1, true),
                     new ExplodeModifier(ComparisonOperator.Equal, 20),
-                    new ConstantModifier(ArithmaticOperator.Add, 5)
+                    new ConstantModifier(ArithmeticOperator.Add, 5)
                 }),
                 31, // 20 (first roll) + 6 (explosion) + 5 (modifier) = 31
                 "Complex Attack: 1d20 advantage, explode on 20, +5 modifier (20->6, 5) = 31"
@@ -754,7 +754,7 @@ namespace DotDice.Tests
                 new BasicRoll(3, new DieType.Basic(6), new List<Modifier> { 
                     new ExplodeModifier(ComparisonOperator.Equal, 6),
                     new KeepModifier(2, true),
-                    new ConstantModifier(ArithmaticOperator.Add, 4)
+                    new ConstantModifier(ArithmeticOperator.Add, 4)
                 }),
                 16, // (6 + 6) + 4 = 16
                 "Dice Chain: 3d6, explode 6s, keep 2 highest, +4 (6->6,3,4, c4) = 16"
@@ -766,7 +766,7 @@ namespace DotDice.Tests
                 new BasicRoll(3, new DieType.Basic(6), new List<Modifier> { 
                     new CompoundingModifier(ComparisonOperator.Equal, 6),
                     new KeepModifier(2, true),
-                    new ConstantModifier(ArithmaticOperator.Add, 4)
+                    new ConstantModifier(ArithmeticOperator.Add, 4)
                 }),
                 25, // (6 + 6 + 5) + 4 + 4 = 25
                 "Shadowrun with compound modifier: 3d6, compound on 6s, keep 2 highest, +4 (6->6->5,3,4, c4) = 25"
@@ -832,7 +832,7 @@ namespace DotDice.Tests
                 new List<Roll> {
                     new BasicRoll(1, new DieType.Basic(20), new List<Modifier>()),
                     new BasicRoll(2, new DieType.Basic(6), new List<Modifier> { 
-                        new ConstantModifier(ArithmaticOperator.Add, 3) 
+                        new ConstantModifier(ArithmeticOperator.Add, 3) 
                     })
                 },
                 new Func<List<int>, int>(results => results[0] >= 15 ? results[1] : 0),
@@ -846,7 +846,7 @@ namespace DotDice.Tests
                 new List<Roll> {
                     new BasicRoll(1, new DieType.Basic(20), new List<Modifier>()),
                     new BasicRoll(2, new DieType.Basic(6), new List<Modifier> { 
-                        new ConstantModifier(ArithmaticOperator.Add, 3) 
+                        new ConstantModifier(ArithmeticOperator.Add, 3) 
                     })
                 },
                 new Func<List<int>, int>(results => results[0] >= 15 ? results[1] : 0),
@@ -958,10 +958,10 @@ namespace DotDice.Tests
             var mockRng = new MockRandomNumberGenerator(new List<int> { 3, 5 });
             var evaluator = new DiceEvaluator(mockRng);
             
-            var roll = new ArithmeticRoll(new List<(ArithmaticOperator, Roll)>
+            var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
             {
-                (ArithmaticOperator.Add, new BasicRoll(1, new DieType.Basic(6), new List<Modifier>())),
-                (ArithmaticOperator.Add, new BasicRoll(1, new DieType.Basic(8), new List<Modifier>()))
+                (ArithmeticOperator.Add, new BasicRoll(1, new DieType.Basic(6), new List<Modifier>())),
+                (ArithmeticOperator.Add, new BasicRoll(1, new DieType.Basic(8), new List<Modifier>()))
             });
 
             // Act
@@ -978,10 +978,10 @@ namespace DotDice.Tests
             var mockRng = new MockRandomNumberGenerator(new List<int> { 15, 3 });
             var evaluator = new DiceEvaluator(mockRng);
             
-            var roll = new ArithmeticRoll(new List<(ArithmaticOperator, Roll)>
+            var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
             {
-                (ArithmaticOperator.Add, new BasicRoll(1, new DieType.Basic(20), new List<Modifier>())),
-                (ArithmaticOperator.Subtract, new BasicRoll(1, new DieType.Basic(4), new List<Modifier>()))
+                (ArithmeticOperator.Add, new BasicRoll(1, new DieType.Basic(20), new List<Modifier>())),
+                (ArithmeticOperator.Subtract, new BasicRoll(1, new DieType.Basic(4), new List<Modifier>()))
             });
 
             // Act
@@ -998,11 +998,11 @@ namespace DotDice.Tests
             var mockRng = new MockRandomNumberGenerator(new List<int> { 10 });
             var evaluator = new DiceEvaluator(mockRng);
             
-            var roll = new ArithmeticRoll(new List<(ArithmaticOperator, Roll)>
+            var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
             {
-                (ArithmaticOperator.Add, new BasicRoll(1, new DieType.Basic(12), new List<Modifier>())),
-                (ArithmaticOperator.Add, new Constant(5)),
-                (ArithmaticOperator.Subtract, new Constant(2))
+                (ArithmeticOperator.Add, new BasicRoll(1, new DieType.Basic(12), new List<Modifier>())),
+                (ArithmeticOperator.Add, new Constant(5)),
+                (ArithmeticOperator.Subtract, new Constant(2))
             });
 
             // Act
@@ -1019,12 +1019,12 @@ namespace DotDice.Tests
             var mockRng = new MockRandomNumberGenerator(new List<int> { 6, 4, 2 });
             var evaluator = new DiceEvaluator(mockRng);
             
-            var roll = new ArithmeticRoll(new List<(ArithmaticOperator, Roll)>
+            var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
             {
-                (ArithmaticOperator.Add, new BasicRoll(1, new DieType.Basic(6), new List<Modifier>())),
-                (ArithmaticOperator.Add, new BasicRoll(1, new DieType.Basic(6), new List<Modifier>())),
-                (ArithmaticOperator.Subtract, new BasicRoll(1, new DieType.Basic(4), new List<Modifier>())),
-                (ArithmaticOperator.Add, new Constant(3))
+                (ArithmeticOperator.Add, new BasicRoll(1, new DieType.Basic(6), new List<Modifier>())),
+                (ArithmeticOperator.Add, new BasicRoll(1, new DieType.Basic(6), new List<Modifier>())),
+                (ArithmeticOperator.Subtract, new BasicRoll(1, new DieType.Basic(4), new List<Modifier>())),
+                (ArithmeticOperator.Add, new Constant(3))
             });
 
             // Act
@@ -1041,13 +1041,13 @@ namespace DotDice.Tests
             var mockRng = new MockRandomNumberGenerator(new List<int> { 6, 3, 1, 4 });
             var evaluator = new DiceEvaluator(mockRng);
             
-            var roll = new ArithmeticRoll(new List<(ArithmaticOperator, Roll)>
+            var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
             {
-                (ArithmaticOperator.Add, new BasicRoll(1, new DieType.Basic(6), new List<Modifier>
+                (ArithmeticOperator.Add, new BasicRoll(1, new DieType.Basic(6), new List<Modifier>
                 {
                     new ExplodeModifier(ComparisonOperator.Equal, 6)
                 })),
-                (ArithmaticOperator.Subtract, new BasicRoll(1, new DieType.Basic(4), new List<Modifier>
+                (ArithmeticOperator.Subtract, new BasicRoll(1, new DieType.Basic(4), new List<Modifier>
                 {
                     new RerollOnceModifier(ComparisonOperator.LessThan, 2)
                 }))
@@ -1067,10 +1067,10 @@ namespace DotDice.Tests
             var mockRng = new MockRandomNumberGenerator(new List<int> { 2, 8 });
             var evaluator = new DiceEvaluator(mockRng);
             
-            var roll = new ArithmeticRoll(new List<(ArithmaticOperator, Roll)>
+            var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
             {
-                (ArithmaticOperator.Add, new BasicRoll(1, new DieType.Basic(4), new List<Modifier>())),
-                (ArithmaticOperator.Subtract, new BasicRoll(1, new DieType.Basic(8), new List<Modifier>()))
+                (ArithmeticOperator.Add, new BasicRoll(1, new DieType.Basic(4), new List<Modifier>())),
+                (ArithmeticOperator.Subtract, new BasicRoll(1, new DieType.Basic(8), new List<Modifier>()))
             });
 
             // Act
@@ -1087,10 +1087,10 @@ namespace DotDice.Tests
             var mockRng = new MockRandomNumberGenerator(new List<int> { 5 });
             var evaluator = new DiceEvaluator(mockRng);
             
-            var roll = new ArithmeticRoll(new List<(ArithmaticOperator, Roll)>
+            var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
             {
-                (ArithmaticOperator.Add, new BasicRoll(1, new DieType.Basic(6), new List<Modifier>())),
-                (ArithmaticOperator.Subtract, new Constant(5))
+                (ArithmeticOperator.Add, new BasicRoll(1, new DieType.Basic(6), new List<Modifier>())),
+                (ArithmeticOperator.Subtract, new Constant(5))
             });
 
             // Act
@@ -1106,11 +1106,11 @@ namespace DotDice.Tests
             // Arrange
             var evaluator = new DiceEvaluator(new RandomIntGenerator());
             
-            var roll = new ArithmeticRoll(new List<(ArithmaticOperator, Roll)>
+            var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
             {
-                (ArithmaticOperator.Add, new Constant(10)),
-                (ArithmaticOperator.Add, new Constant(7)),
-                (ArithmaticOperator.Subtract, new Constant(3))
+                (ArithmeticOperator.Add, new Constant(10)),
+                (ArithmeticOperator.Add, new Constant(7)),
+                (ArithmeticOperator.Subtract, new Constant(3))
             });
 
             // Act
@@ -1127,15 +1127,15 @@ namespace DotDice.Tests
             var mockRng = new MockRandomNumberGenerator(new List<int> { 10, 15, 8, 4, 5, 6, 2, 3, 1, 3 });
             var evaluator = new DiceEvaluator(mockRng);
             
-            var roll = new ArithmeticRoll(new List<(ArithmaticOperator, Roll)>
+            var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
             {
-                (ArithmaticOperator.Add, new BasicRoll(3, new DieType.Basic(20), new List<Modifier>())),
-                (ArithmaticOperator.Add, new BasicRoll(5, new DieType.Basic(6), new List<Modifier>())),
-                (ArithmaticOperator.Subtract, new BasicRoll(1, new DieType.Basic(4), new List<Modifier>
+                (ArithmeticOperator.Add, new BasicRoll(3, new DieType.Basic(20), new List<Modifier>())),
+                (ArithmeticOperator.Add, new BasicRoll(5, new DieType.Basic(6), new List<Modifier>())),
+                (ArithmeticOperator.Subtract, new BasicRoll(1, new DieType.Basic(4), new List<Modifier>
                 {
                     new RerollOnceModifier(ComparisonOperator.LessThan, 2)
                 })),
-                (ArithmaticOperator.Add, new Constant(1))
+                (ArithmeticOperator.Add, new Constant(1))
             });
 
             // Act
@@ -1153,11 +1153,11 @@ namespace DotDice.Tests
             var mockRng = new MockRandomNumberGenerator(new List<int> { 100 });
             var evaluator = new DiceEvaluator(mockRng);
             
-            var roll = new ArithmeticRoll(new List<(ArithmaticOperator, Roll)>
+            var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
             {
-                (ArithmaticOperator.Add, new BasicRoll(1, new DieType.Basic(100), new List<Modifier>())),
-                (ArithmaticOperator.Add, new Constant(1000)),
-                (ArithmaticOperator.Subtract, new Constant(50))
+                (ArithmeticOperator.Add, new BasicRoll(1, new DieType.Basic(100), new List<Modifier>())),
+                (ArithmeticOperator.Add, new Constant(1000)),
+                (ArithmeticOperator.Subtract, new Constant(50))
             });
 
             // Act
@@ -1174,13 +1174,13 @@ namespace DotDice.Tests
             var mockRng = new MockRandomNumberGenerator(new List<int> { 6, 3, 5, 2, 4 });
             var evaluator = new DiceEvaluator(mockRng);
             
-            var roll = new ArithmeticRoll(new List<(ArithmaticOperator, Roll)>
+            var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
             {
-                (ArithmaticOperator.Add, new BasicRoll(5, new DieType.Basic(6), new List<Modifier>
+                (ArithmeticOperator.Add, new BasicRoll(5, new DieType.Basic(6), new List<Modifier>
                 {
                     new SuccessModifier(ComparisonOperator.GreaterThan, 4)
                 })),
-                (ArithmaticOperator.Add, new Constant(10))
+                (ArithmeticOperator.Add, new Constant(10))
             });
 
             // Act
@@ -1198,10 +1198,10 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(new RandomIntGenerator());
             
             // Create a roll with an invalid operator (casting an invalid enum value)
-            var roll = new ArithmeticRoll(new List<(ArithmaticOperator, Roll)>
+            var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
             {
-                (ArithmaticOperator.Add, new Constant(5)),
-                ((ArithmaticOperator)999, new Constant(3)) // Invalid operator
+                (ArithmeticOperator.Add, new Constant(5)),
+                ((ArithmeticOperator)999, new Constant(3)) // Invalid operator
             });
 
             // Act & Assert

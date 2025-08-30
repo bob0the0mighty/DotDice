@@ -262,9 +262,9 @@ namespace DotDice.Evaluator
             //Constant should be applied after everything else, and just add a value to the total of all rolls, not individual rolls
             var value = constantModifier.Operator switch
             {
-                ArithmaticOperator.Add => constantModifier.Value,
-                ArithmaticOperator.Subtract => -constantModifier.Value,
-                _ => throw new InvalidEnumArgumentException("Invalid ArithmaticOperator")
+                ArithmeticOperator.Add => constantModifier.Value,
+                ArithmeticOperator.Subtract => -constantModifier.Value,
+                _ => throw new InvalidEnumArgumentException("Invalid ArithmeticOperator")
             };
             return rolls.Append(new(value, new DieType.Constant()))
                 .ToList();

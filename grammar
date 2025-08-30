@@ -2,7 +2,7 @@
 
 <basic_roll>        ::= <number_of_dice> "d" <die_type_section> <modifiers> 
 
-<arithmatic>        ::= <addition>
+<arithmetic>        ::= <addition>
                       | <subtraction>
 
 <constant>          ::= <integer>
@@ -46,7 +46,7 @@
 
 <failure_modifier>  ::= "f" <comparison_point> 
 
-<contstant_modifier> ::= <arithmatic> <constant>
+<constant_modifier> ::= <arithmetic> <constant>
 
 <comparison_point>  ::= <comparison_operator> <integer>
 
