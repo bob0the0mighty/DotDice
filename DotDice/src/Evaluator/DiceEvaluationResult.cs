@@ -9,6 +9,7 @@ namespace DotDice.Evaluator
     {
         public int Value { get; set; }
         public DieEventType Type { get; init; }
+        public DieType? DieType { get; init; }
         public RollSignificance Significance { get; init; }
         public DieStatus Status { get; set; } = DieStatus.Kept;
         public SuccessStatus Success { get; set; } = SuccessStatus.Neutral;
@@ -20,7 +21,7 @@ namespace DotDice.Evaluator
     /// </summary>
     public class DiceEvaluationResult
     {
-        public int Value { get; }
+        public int Value { get; init; }
         public List<DieEvent> Events { get; }
 
         public DiceEvaluationResult(int value, List<DieEvent> events)

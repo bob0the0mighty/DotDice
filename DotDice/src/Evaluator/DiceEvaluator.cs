@@ -54,7 +54,17 @@ namespace DotDice.Evaluator
 
         public int Evaluate(Roll roll)
         {
-            return EvaluateDetailed(roll).Value;
+            switch (roll)
+            {
+                case BasicRoll basicRoll:
+                    return EvaluateBasicRoll(basicRoll);
+                case Constant constant:
+                    return constant.Value;
+                case ArithmeticRoll arithmeticRoll:
+                    return EvaluateArithmeticRoll(arithmeticRoll);
+                default:
+                    throw new ArgumentException("Unknown roll type", nameof(roll));
+            }
         }
 
         public DiceEvaluationResult EvaluateDetailed(Roll roll)
@@ -208,6 +218,7 @@ namespace DotDice.Evaluator
             {
                 Value = value,
                 Type = eventType,
+                DieType = dieType,
                 Significance = significance,
                 Status = DieStatus.Kept,
                 Success = SuccessStatus.Neutral
@@ -705,22 +716,46 @@ namespace DotDice.Evaluator
                     continue;
                 }
 
-                var currentEvent = evt;
+                // Set up for compounding - start with the original event's value
+                int totalValue = evt.Value;
                 int compoundCounter = 0;
-                var compoundEvents = new List<DieEvent> { evt };
+                var currentValue = evt.Value;
+                var compoundEvents = new List<DieEvent>();
 
+                // Track compound events for transparency but use totalValue for final result
                 while (compoundCounter < MaxCompounds &&
-                       Compare(currentEvent.Value, compoundingModifier.Operator, compoundingModifier.Value))
+                       Compare(currentValue, compoundingModifier.Operator, compoundingModifier.Value))
                 {
                     // Create compound event
-                    currentEvent = RollDieEvent(originalDieType, DieEventType.Compound);
-                    compoundEvents.Add(currentEvent);
+                    var compoundEvent = RollDieEvent(originalDieType, DieEventType.Compound);
+                    compoundEvents.Add(compoundEvent);
+                    
+                    // Add to total value
+                    totalValue += compoundEvent.Value;
+                    currentValue = compoundEvent.Value;
 
                     compoundCounter++;
                 }
 
-                // Add all compound events - the sum will be calculated during finalization
-                result.AddRange(compoundEvents);
+                // Create a single event representing the compounded result
+                var finalEvent = new DieEvent
+                {
+                    Value = totalValue,
+                    Type = compoundEvents.Count > 0 ? DieEventType.Compound : evt.Type,
+                    DieType = evt.DieType,
+                    Significance = GetRollSignificance(totalValue, evt.DieType),
+                    Status = evt.Status,
+                    Success = evt.Success
+                };
+
+                result.Add(finalEvent);
+                
+                // Add the compound events for transparency (but mark them as discarded so they don't count in final sum)
+                foreach (var compoundEvent in compoundEvents)
+                {
+                    compoundEvent.Status = DieStatus.Discarded;
+                    result.Add(compoundEvent);
+                }
             }
 
             return result;
@@ -865,24 +900,6 @@ namespace DotDice.Evaluator
                    evt.Type == DieEventType.Reroll || 
                    evt.Type == DieEventType.Explosion || 
                    evt.Type == DieEventType.Compound;
-        }
-
-        private static DieType GetDieTypeFromEvent(DieEvent evt)
-        {
-            // This is a simplified approach - in a real implementation, we'd need to track the original die type
-            // For now, we'll assume basic dice of reasonable sizes based on common values
-            return evt.Value switch
-            {
-                >= 1 and <= 4 => new DieType.Basic(4),
-                >= 1 and <= 6 => new DieType.Basic(6),
-                >= 1 and <= 8 => new DieType.Basic(8),
-                >= 1 and <= 10 => new DieType.Basic(10),
-                >= 1 and <= 12 => new DieType.Basic(12),
-                >= 1 and <= 20 => new DieType.Basic(20),
-                >= 1 and <= 100 => new DieType.Percent(),
-                >= -1 and <= 1 => new DieType.Fudge(),
-                _ => new DieType.Basic(20) // Default fallback
-            };
         }
 
         #endregion
