@@ -37,7 +37,7 @@ namespace DotDice.Parser
     }
 
     public record ArithmeticRoll(
-        List<(ArithmaticOperator Operator, Roll Roll)> Terms
+        List<(ArithmeticOperator Operator, Roll Roll)> Terms
     ) : Roll
     {
         public override string ToString()
