@@ -52,7 +52,7 @@ Console.WriteLine($"3d6: {result}");
 
 // Roll 1d20 with +5 modifier
 var attackRoll = new BasicRoll(1, new DieType.Basic(20), 
-                               new List<Modifier> { new ConstantModifier(ArithmaticOperator.Add, 5) });
+                               new List<Modifier> { new ConstantModifier(ArithmeticOperator.Add, 5) });
 int attackResult = evaluator.Evaluate(attackRoll);
 Console.WriteLine($"1d20+5: {attackResult}");
 ```

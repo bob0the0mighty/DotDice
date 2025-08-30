@@ -396,7 +396,7 @@ namespace DotDice.Tests
             Assert.IsTrue(modifiers[2] is ConstantModifier);
             
             var constMod = modifiers[2] as ConstantModifier;
-            Assert.That(constMod?.Operator, Is.EqualTo(ArithmaticOperator.Add));
+            Assert.That(constMod?.Operator, Is.EqualTo(ArithmeticOperator.Add));
             Assert.That(constMod?.Value, Is.EqualTo(5));
         }
 
@@ -421,7 +421,7 @@ namespace DotDice.Tests
             Assert.IsTrue(modifiers[5] is ConstantModifier);
             
             var constMod = modifiers[5] as ConstantModifier;
-            Assert.That(constMod?.Operator, Is.EqualTo(ArithmaticOperator.Subtract));
+            Assert.That(constMod?.Operator, Is.EqualTo(ArithmeticOperator.Subtract));
             Assert.That(constMod?.Value, Is.EqualTo(7));
         }
 
@@ -567,7 +567,7 @@ namespace DotDice.Tests
             
             var constMod = modifiers[0] as ConstantModifier;
             Assert.NotNull(constMod);
-            Assert.That(constMod.Operator, Is.EqualTo(ArithmaticOperator.Add));
+            Assert.That(constMod.Operator, Is.EqualTo(ArithmeticOperator.Add));
             Assert.That(constMod.Value, Is.EqualTo(5));
         }
 
@@ -624,7 +624,7 @@ namespace DotDice.Tests
 
         [TestCase("d6", typeof(BasicRoll))]
         [TestCase("2d10", typeof(BasicRoll))]
-        [TestCase("3d6+5", typeof(BasicRoll))]
+        [TestCase("3d6+5", typeof(ArithmeticRoll))]
         [TestCase("4d8kh3", typeof(BasicRoll))]
         [TestCase("5", typeof(Constant))]
         [TestCase("42", typeof(Constant))]
@@ -699,7 +699,6 @@ namespace DotDice.Tests
 
         [TestCase("")]
         [TestCase("d")]
-        [TestCase("3+4")]
         [TestCase("dice")]
         [TestCase("3d")]
         [TestCase("3d6extra")]
@@ -717,21 +716,30 @@ namespace DotDice.Tests
             var result = DiceParser.Roll.Parse(input);
             Assert.IsTrue(result.Success);
             
-            var roll = result.Value as BasicRoll;
-            Assert.NotNull(roll);
-            Assert.That(roll.NumberOfDice, Is.EqualTo(5));
+            // This now gets parsed as an ArithmeticRoll because of the +7
+            var arithmeticRoll = result.Value as ArithmeticRoll;
+            Assert.NotNull(arithmeticRoll);
             
-            var dieType = roll.DieType as DieType.Basic;
+            // Check that we have 2 terms: the complex dice roll and the constant
+            Assert.That(arithmeticRoll.Terms.Count, Is.EqualTo(2));
+            
+            // First term should be the complex dice roll
+            var firstTerm = arithmeticRoll.Terms[0];
+            Assert.That(firstTerm.Operator, Is.EqualTo(ArithmeticOperator.Add));
+            var firstRoll = firstTerm.Roll as BasicRoll;
+            Assert.NotNull(firstRoll);
+            Assert.That(firstRoll.NumberOfDice, Is.EqualTo(5));
+            
+            var dieType = firstRoll.DieType as DieType.Basic;
             Assert.NotNull(dieType);
             Assert.That(dieType.sides, Is.EqualTo(10));
             
-            var modifiers = roll.Modifiers.ToList();
-            Assert.That(modifiers.Count, Is.EqualTo(4));
+            var modifiers = firstRoll.Modifiers.ToList();
+            Assert.That(modifiers.Count, Is.EqualTo(3)); // explode, failure, keep (no constant modifier)
             
             Assert.IsTrue(modifiers[0] is ExplodeModifier);
             Assert.IsTrue(modifiers[1] is FailureModifier);
             Assert.IsTrue(modifiers[2] is KeepModifier);
-            Assert.IsTrue(modifiers[3] is ConstantModifier);
             
             var explodeMod = modifiers[0] as ExplodeModifier;
             Assert.That(explodeMod?.Operator, Is.EqualTo(ComparisonOperator.GreaterThan));
@@ -745,9 +753,12 @@ namespace DotDice.Tests
             Assert.That(keepMod?.Count, Is.EqualTo(3));
             Assert.That(keepMod?.KeepHighest, Is.True);
             
-            var constMod = modifiers[3] as ConstantModifier;
-            Assert.That(constMod?.Operator, Is.EqualTo(ArithmaticOperator.Add));
-            Assert.That(constMod?.Value, Is.EqualTo(7));
+            // Second term should be the constant
+            var secondTerm = arithmeticRoll.Terms[1];
+            Assert.That(secondTerm.Operator, Is.EqualTo(ArithmeticOperator.Add));
+            var secondRoll = secondTerm.Roll as Constant;
+            Assert.NotNull(secondRoll);
+            Assert.That(secondRoll.Value, Is.EqualTo(7));
         }
 
         [Test]
