@@ -91,10 +91,10 @@ namespace DotDice.Evaluator
                 
                 switch (operation)
                 {
-                    case ArithmaticOperator.Add:
+                    case ArithmeticOperator.Add:
                         result += rollValue;
                         break;
-                    case ArithmaticOperator.Subtract:
+                    case ArithmeticOperator.Subtract:
                         result -= rollValue;
                         break;
                     default:
