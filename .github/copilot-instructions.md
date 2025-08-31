@@ -130,14 +130,16 @@ The formal grammar is documented in `/grammar` - reference this for understandin
 - `ro`, `rc` - Reroll once/continuously
 
 ## Common Development Tasks
+* Update the grammar in `/grammar` file if needed
+* Update the readme if changes to the API are introduced
+  * This should include examples of usage of new functionality
 
 ### Adding New Dice Notation
-1. Update the grammar in `/grammar` file if needed
-2. Modify parser in `DotDice/src/Parser/DiceParser.cs`
-3. Add new modifier class in `DotDice/src/Parser/Modifiers.cs` if needed
-4. Update evaluator logic in `DotDice/src/Evaluator/DiceEvaluator.cs`
-5. **ALWAYS** add comprehensive tests in appropriate test files
-6. **ALWAYS** validate with manual test console application
+1. Modify parser in `DotDice/src/Parser/DiceParser.cs`
+2. Add new modifier class in `DotDice/src/Parser/Modifiers.cs` if needed
+3. Update evaluator logic in `DotDice/src/Evaluator/DiceEvaluator.cs`
+4. **ALWAYS** add comprehensive tests in appropriate test files
+5. **ALWAYS** validate with manual test console application
 
 ### Debugging Issues
 - Tests provide extensive coverage with 350 test cases
