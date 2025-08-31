@@ -24,6 +24,8 @@ A flexible and extensible dice rolling library for .NET applications, designed t
   - Shadowrun (success counting)
   - FATE/Fudge (fudge dice)
   - Call of Cthulhu (percentile tests)
+- Arithmetic roll expressions (e.g., `3d20+5d6-1d4+1`)
+- Detailed evaluation results with individual die events
 - Extensible architecture for adding custom dice types and modifiers
 
 ## Installation
@@ -36,7 +38,65 @@ dotnet add package DotDice
 
 ## Usage
 
-### Basic Dice Rolling
+### Simple String-Based API
+
+The easiest way to use DotDice is through the string extension methods:
+
+```csharp
+using DotDice.Extension;
+
+// Basic dice rolls
+int result1 = "1d6".ParseRoll();        // Roll a six-sided die
+int result2 = "3d6".ParseRoll();        // Roll three six-sided dice
+int result3 = "1d20+5".ParseRoll();     // Roll d20 with +5 modifier
+
+Console.WriteLine($"1d6: {result1}");
+Console.WriteLine($"3d6: {result2}");
+Console.WriteLine($"1d20+5: {result3}");
+```
+
+### Arithmetic Roll Expressions
+
+DotDice supports complex arithmetic expressions combining multiple dice rolls and constants:
+
+```csharp
+// Multiple dice types in one expression
+int damage = "2d6+1d4+3".ParseRoll();           // Sword + dagger + strength modifier
+int healing = "3d4+2d6".ParseRoll();            // Healing potion + spell bonus
+
+// Complex expressions like those found in RPG systems
+int abilityCheck = "1d20+1d4-2".ParseRoll();    // D&D ability check with guidance and penalty
+int shadowrunTest = "5d6>4+3d6>4".ParseRoll();  // Shadowrun: attribute + skill dice
+
+Console.WriteLine($"Damage: {damage}");
+Console.WriteLine($"Ability Check: {abilityCheck}");
+```
+
+### Detailed Evaluation Results
+
+For applications that need to know what happened during the roll (individual die results, which dice were dropped, etc.), use the detailed evaluation API:
+
+```csharp
+using DotDice.Extension;
+using DotDice.Evaluator;
+
+// Get detailed results
+var detailedResult = "2d6kh1".ParseRollDetailed();  // Roll 2d6, keep highest
+
+Console.WriteLine($"Final Value: {detailedResult.Value}");
+Console.WriteLine("Individual Events:");
+
+foreach (var evt in detailedResult.Events)
+{
+    Console.WriteLine($"  Die: {evt.DieType}, Value: {evt.Value}, Status: {evt.Status}");
+    // evt.Type shows if it was Initial, Reroll, Explode, etc.
+    // evt.Significance shows if it was a critical hit, minimum roll, etc.
+}
+```
+
+### Advanced API (Direct Object Creation)
+
+For more complex scenarios or when you need fine-grained control, you can create roll objects directly:
 
 ```csharp
 using DotDice.Evaluator;
@@ -116,14 +176,19 @@ Console.WriteLine($"Savage Worlds: Trait d8 = {traitResult}, Wild Die d6 = {wild
 
 ## Supported Dice Notations
 
-DotDice currently supports the following dice types:
+DotDice supports a comprehensive dice notation syntax:
 
+### Basic Dice
 - `d#` - Standard dice (d4, d6, d8, d10, d12, d20, etc.)
 - `d%` or `d100` - Percentile dice
 - `dF` - Fudge/Fate dice
 
-And the following modifiers:
+### Arithmetic Expressions
+- `+` - Addition (e.g., `1d6+3`, `2d6+1d4`)
+- `-` - Subtraction (e.g., `1d20-2`, `3d6-1d4`)
+- Complex expressions: `3d20+5d6-1d4+1`
 
+### Modifiers
 - `kh#` - Keep highest # dice
 - `kl#` - Keep lowest # dice
 - `dh#` - Drop highest # dice
@@ -135,6 +200,13 @@ And the following modifiers:
 - `+#`, `-#` - Add or subtract a constant value
 - `cs>#`, `cs<#`, `cs=#` - Count successes (greater than, less than, or equal to #)
 - `cf>#`, `cf<#`, `cf=#` - Count failures (greater than, less than, or equal to #)
+
+### Examples
+- `4d6kh3` - Roll 4d6, keep highest 3 (D&D ability scores)
+- `2d20kh1` - Roll 2d20, keep highest (D&D advantage)
+- `1d6!=6` - Roll 1d6, explode on 6 (Savage Worlds)
+- `5d6>4` - Roll 5d6, count successes of 5+ (Shadowrun)
+- `3d6+2d4-1` - Roll 3d6 plus 2d4 minus 1
 
 ## Contributing
 
