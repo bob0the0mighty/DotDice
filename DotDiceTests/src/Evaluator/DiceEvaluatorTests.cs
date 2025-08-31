@@ -11,42 +11,7 @@ namespace DotDice.Tests
          // Mock class for testing purposes
         private record UnknownRoll : Roll { }
 
-        // Mock Random Number Generator for testing purposes
-        public class MockRandomNumberGenerator : IRandomNumberGenerator<int>
-        {
-            private readonly List<int> _numbers;
-            private int _index = 0;
 
-            public MockRandomNumberGenerator(List<int> numbers)
-            {
-                _numbers = numbers;
-            }
-
-            public int Next()
-            {
-                return _numbers[_index++];
-            }
-
-            public int Next(int maxValue)
-            {
-                return _numbers[_index++];
-            }
-
-            public int Next(int minValue, int maxValue)
-            {
-                return _numbers[_index++];
-            }
-
-            public void SetSeed(int seed)
-            {
-                throw new NotImplementedException();
-            }
-
-            public int GetSeed()
-            {
-                throw new NotImplementedException();
-            }
-        }
 
         // Special Random Number Generator that returns the same value repeatedly
         public class RepeatingRandomNumberGenerator : IRandomNumberGenerator<int>
@@ -141,7 +106,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(Evaluate_BasicRoll_ReturnsSumOfDice_TestCases))]
         public void Evaluate_BasicRoll_ReturnsSumOfDice(List<int> numbers, int expected)
         {
-            var evaluator = new DiceEvaluator(new MockRandomNumberGenerator(numbers));
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var basicRoll = new BasicRoll(numbers.Count, new DieType.Basic(6), new List<Modifier>());
             Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected));
         }
@@ -156,7 +121,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(Evaluate_PercentRoll_ReturnsSumOfDice_TestCases))]
         public void Evaluate_PercentRoll_ReturnsSumOfDice(List<int> numbers, int numberOfDice, int expected)
         {
-            var evaluator = new DiceEvaluator(new MockRandomNumberGenerator(numbers));
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var basicRoll = new BasicRoll(numberOfDice, new DieType.Percent(), new List<Modifier>());
             Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
         }
@@ -174,7 +139,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(Evaluate_FudgeRoll_ReturnsSumOfDice_TestCases))]
         public void Evaluate_FudgeRoll_ReturnsSumOfDice(List<int> numbers, int numberOfDice, int expected)
         {
-            var evaluator = new DiceEvaluator(new MockRandomNumberGenerator(numbers));
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var basicRoll = new BasicRoll(numberOfDice, new DieType.Fudge(), new List<Modifier>());
             Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
         }
@@ -193,7 +158,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(Evaluate_BasicRoll_WithKeepHighestModifier_TestCases))]
         public void Evaluate_BasicRoll_WithKeepHighestModifier(List<int> numbers, int numberOfDice, DieType dieType, int keepCount, int expected)
         {
-            var evaluator = new DiceEvaluator(new MockRandomNumberGenerator(numbers));
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new KeepModifier(keepCount, true) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
             Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
@@ -224,7 +189,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(Evaluate_BasicRoll_WithKeepLowestModifier_TestCases))]
         public void Evaluate_BasicRoll_WithKeepLowestModifier(List<int> numbers, int numberOfDice, DieType dieType, int keepCount, int expected)
         {
-            var evaluator = new DiceEvaluator(new MockRandomNumberGenerator(numbers));
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new KeepModifier(keepCount, false) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
             Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
@@ -255,7 +220,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(Evaluate_BasicRoll_WithDropHighestModifier_TestCases))]
         public void Evaluate_BasicRoll_WithDropHighestModifier(List<int> numbers, int numberOfDice, DieType dieType, int dropCount, int expected)
         {
-            var evaluator = new DiceEvaluator(new MockRandomNumberGenerator(numbers));
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new DropModifier(dropCount, true) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
             Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
@@ -286,7 +251,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(Evaluate_BasicRoll_WithDropLowestModifier_TestCases))]
         public void Evaluate_BasicRoll_WithDropLowestModifier(List<int> numbers, int numberOfDice, DieType dieType, int dropCount, int expected)
         {
-            var evaluator = new DiceEvaluator(new MockRandomNumberGenerator(numbers));
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new DropModifier(dropCount, false) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
             Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
@@ -317,7 +282,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(Evaluate_BasicRoll_WithRerollOnceModifier_TestCases))]
         public void Evaluate_BasicRoll_WithRerollOnceModifier(List<int> numbers, int numberOfDice, DieType dieType, ComparisonOperator comparisonOperator, int value, int expected)
         {
-            var evaluator = new DiceEvaluator(new MockRandomNumberGenerator(numbers));
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new RerollOnceModifier(comparisonOperator, value) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
             Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
@@ -343,7 +308,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(Evaluate_BasicRoll_WithRerollMultipleModifier_TestCases))]
         public void Evaluate_BasicRoll_WithRerollMultipleModifier(List<int> numbers, int numberOfDice, DieType dieType, ComparisonOperator comparisonOperator, int value, int expected)
         {
-            var evaluator = new DiceEvaluator(new MockRandomNumberGenerator(numbers));
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new RerollMultipleModifier(comparisonOperator, value) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
             Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
@@ -386,22 +351,22 @@ namespace DotDice.Tests
         private static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithExplodeModifier_TestCases()
         {
             // Single dice tests with various die types
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 6, 6, 2 }), 1, new DieType.Basic(6), ComparisonOperator.GreaterThan, 5, 14);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 4, 4, 2 }), 1, new DieType.Basic(4), ComparisonOperator.Equal, 4, 10);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 8, 7, 6 }), 1, new DieType.Basic(8), ComparisonOperator.GreaterThan, 6, 21);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 10, 8 }), 1, new DieType.Basic(10), ComparisonOperator.GreaterThan, 9, 18);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 20, 15 }), 1, new DieType.Basic(20), ComparisonOperator.Equal, 20, 35);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 6, 6, 2 }), 1, new DieType.Basic(6), ComparisonOperator.GreaterThan, 5, 14);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 4, 4, 2 }), 1, new DieType.Basic(4), ComparisonOperator.Equal, 4, 10);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 8, 7, 6 }), 1, new DieType.Basic(8), ComparisonOperator.GreaterThan, 6, 21);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 10, 8 }), 1, new DieType.Basic(10), ComparisonOperator.GreaterThan, 9, 18);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 20, 15 }), 1, new DieType.Basic(20), ComparisonOperator.Equal, 20, 35);
             // Multiple dice tests
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 5, 6, 6, 3 }), 2, new DieType.Basic(6), ComparisonOperator.GreaterThan, 5, 20);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 8, 3, 8, 8, 2 }), 2, new DieType.Basic(8), ComparisonOperator.Equal, 8, 29);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 4, 2, 3, 4, 4, 2 }), 3, new DieType.Basic(4), ComparisonOperator.GreaterThan, 3, 19);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 5, 6, 6, 3 }), 2, new DieType.Basic(6), ComparisonOperator.GreaterThan, 5, 20);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 8, 3, 8, 8, 2 }), 2, new DieType.Basic(8), ComparisonOperator.Equal, 8, 29);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 4, 2, 3, 4, 4, 2 }), 3, new DieType.Basic(4), ComparisonOperator.GreaterThan, 3, 19);
             // Different die types
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 12, 12, 5 }), 1, new DieType.Basic(12), ComparisonOperator.GreaterThan, 11, 29);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 100, 50 }), 1, new DieType.Percent(), ComparisonOperator.Equal, 100, 150);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 1, 1, -1 }), 1, new DieType.Fudge(), ComparisonOperator.Equal, 1, 1);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 12, 12, 5 }), 1, new DieType.Basic(12), ComparisonOperator.GreaterThan, 11, 29);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 100, 50 }), 1, new DieType.Percent(), ComparisonOperator.Equal, 100, 150);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 1, 1, -1 }), 1, new DieType.Fudge(), ComparisonOperator.Equal, 1, 1);
             // Mixed scenarios
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 7, 9, 10, 4 }), 2, new DieType.Basic(10), ComparisonOperator.GreaterThan, 8, 30);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 3, 3, 3, 2 }), 1, new DieType.Basic(3), ComparisonOperator.GreaterThan, 2, 11);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 7, 9, 10, 4 }), 2, new DieType.Basic(10), ComparisonOperator.GreaterThan, 8, 30);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 3, 3, 3, 2 }), 1, new DieType.Basic(3), ComparisonOperator.GreaterThan, 2, 11);
             // Max explosion tests (with repeating generator)
             yield return new TestCaseData(new RepeatingRandomNumberGenerator(6), 1, new DieType.Basic(6), ComparisonOperator.GreaterThan, 5, 606); // Will hit explosion limit of 100
             yield return new TestCaseData(new RepeatingRandomNumberGenerator(20), 1, new DieType.Basic(20), ComparisonOperator.Equal, 20, 2020); // Will hit explosion limit of 100
@@ -420,22 +385,22 @@ namespace DotDice.Tests
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithCompoundingModifier_TestCases()
         {
             // Single dice tests with various die types
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 6, 6, 2 }), 1, new DieType.Basic(6), ComparisonOperator.GreaterThan, 5, 14);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 4, 4, 2 }), 1, new DieType.Basic(4), ComparisonOperator.Equal, 4, 10);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 8, 7, 6 }), 1, new DieType.Basic(8), ComparisonOperator.GreaterThan, 6, 21);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 10, 8 }), 1, new DieType.Basic(10), ComparisonOperator.GreaterThan, 9, 18);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 20, 15 }), 1, new DieType.Basic(20), ComparisonOperator.Equal, 20, 35);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 6, 6, 2 }), 1, new DieType.Basic(6), ComparisonOperator.GreaterThan, 5, 14);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 4, 4, 2 }), 1, new DieType.Basic(4), ComparisonOperator.Equal, 4, 10);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 8, 7, 6 }), 1, new DieType.Basic(8), ComparisonOperator.GreaterThan, 6, 21);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 10, 8 }), 1, new DieType.Basic(10), ComparisonOperator.GreaterThan, 9, 18);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 20, 15 }), 1, new DieType.Basic(20), ComparisonOperator.Equal, 20, 35);
             // Multiple dice tests (each die is evaluated separately for compounding)
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 6, 3, 6, 4 }), 2, new DieType.Basic(6), ComparisonOperator.GreaterThan, 5, 19);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 8, 5, 8, 7 }), 2, new DieType.Basic(8), ComparisonOperator.Equal, 8, 28);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 4, 3, 2, 4, 4, 1 }), 3, new DieType.Basic(4), ComparisonOperator.GreaterThan, 3, 18);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 6, 3, 6, 4 }), 2, new DieType.Basic(6), ComparisonOperator.GreaterThan, 5, 19);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 8, 5, 8, 7 }), 2, new DieType.Basic(8), ComparisonOperator.Equal, 8, 28);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 4, 3, 2, 4, 4, 1 }), 3, new DieType.Basic(4), ComparisonOperator.GreaterThan, 3, 18);
             // Different die types
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 12, 12, 5 }), 1, new DieType.Basic(12), ComparisonOperator.GreaterThan, 11, 29);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 100, 50 }), 1, new DieType.Percent(), ComparisonOperator.Equal, 100, 150);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 1, 1, -1 }), 1, new DieType.Fudge(), ComparisonOperator.Equal, 1, 1);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 12, 12, 5 }), 1, new DieType.Basic(12), ComparisonOperator.GreaterThan, 11, 29);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 100, 50 }), 1, new DieType.Percent(), ComparisonOperator.Equal, 100, 150);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 1, 1, -1 }), 1, new DieType.Fudge(), ComparisonOperator.Equal, 1, 1);
             // Mixed scenarios
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 10, 10, 10, 2, 5 }), 2, new DieType.Basic(10), ComparisonOperator.GreaterThan, 9, 37);
-            yield return new TestCaseData(new MockRandomNumberGenerator(new List<int> { 3, 3, 3, 3, 1 }), 1, new DieType.Basic(3), ComparisonOperator.GreaterThan, 2, 13);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 10, 10, 10, 2, 5 }), 2, new DieType.Basic(10), ComparisonOperator.GreaterThan, 9, 37);
+            yield return new TestCaseData(new TestHelpers.MockRandomNumberGenerator(new List<int> { 3, 3, 3, 3, 1 }), 1, new DieType.Basic(3), ComparisonOperator.GreaterThan, 2, 13);
             // Max compound tests (with repeating generator)
             yield return new TestCaseData(new RepeatingRandomNumberGenerator(6), 1, new DieType.Basic(6), ComparisonOperator.GreaterThan, 5, 606); // Will hit compound limit of 100
             yield return new TestCaseData(new RepeatingRandomNumberGenerator(20), 1, new DieType.Basic(20), ComparisonOperator.Equal, 20, 2020); // Will hit compound limit of 100
@@ -445,7 +410,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(Evaluate_BasicRoll_WithSuccessModifier_TestCases))]
         public void Evaluate_BasicRoll_WithSuccessModifier(List<int> numbers, int numberOfDice, DieType dieType, ComparisonOperator comparisonOperator, int value, int expected)
         {
-            var evaluator = new DiceEvaluator(new MockRandomNumberGenerator(numbers));
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new SuccessModifier(comparisonOperator, value) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
             Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
@@ -488,7 +453,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(Evaluate_BasicRoll_WithFailureModifier_TestCases))]
         public void Evaluate_BasicRoll_WithFailureModifier(List<int> numbers, int numberOfDice, DieType dieType, ComparisonOperator comparisonOperator, int value, int expected)
         {
-            var evaluator = new DiceEvaluator(new MockRandomNumberGenerator(numbers));
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new FailureModifier(comparisonOperator, value) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
             Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
@@ -528,7 +493,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(Evaluate_BasicRoll_WithConstantModifier_TestCases))]
         public void Evaluate_BasicRoll_WithConstantModifier(List<int> numbers, List<Modifier> mods, int expected)
         {
-            var evaluator = new DiceEvaluator(new MockRandomNumberGenerator(numbers));
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var basicRoll = new BasicRoll(numbers.Count, new DieType.Basic(6), mods);
             Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
         }
@@ -543,7 +508,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(Evaluate_BasicRoll_WithConstantModifierAndAnotherModifier_TestCases))]
         public void Evaluate_BasicRoll_WithConstantModifierAndAnotherModifier(List<int> numbers, List<Modifier> mods, int expected)
         {
-            var evaluator = new DiceEvaluator(new MockRandomNumberGenerator(numbers));
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = mods;
             var basicRoll = new BasicRoll(numbers.Count, new DieType.Basic(6), modifiers);
             Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
@@ -617,7 +582,7 @@ namespace DotDice.Tests
                     // This would require unsafe code, so we'll simulate it by testing 
                     // a modifier that internally calls Compare with an invalid operator
                     var compOp = (ComparisonOperator)999; // Invalid value
-                    var mock = new MockRandomNumberGenerator(new List<int> { 1 });
+                    var mock = new TestHelpers.MockRandomNumberGenerator(new List<int> { 1 });
                     var failModifier = new FailureModifier(compOp, 1);
                     var basicRoll = new BasicRoll(1, new DieType.Basic(6), new List<Modifier> { failModifier });
                     evaluator.Evaluate(basicRoll);
@@ -637,7 +602,7 @@ namespace DotDice.Tests
         {
             // D&D Ability Score Generation: 4d6, drop lowest, add modifier
             yield return new TestCaseData(
-                new MockRandomNumberGenerator(new List<int> { 6, 4, 3, 1 }),
+                new TestHelpers.MockRandomNumberGenerator(new List<int> { 6, 4, 3, 1 }),
                 new BasicRoll(4, new DieType.Basic(6), new List<Modifier> { 
                     new DropModifier(1, false) 
                 }),
@@ -647,7 +612,7 @@ namespace DotDice.Tests
 
             // D&D Advantage Roll: 2d20 keep highest
             yield return new TestCaseData(
-                new MockRandomNumberGenerator(new List<int> { 15, 20 }),
+                new TestHelpers.MockRandomNumberGenerator(new List<int> { 15, 20 }),
                 new BasicRoll(2, new DieType.Basic(20), new List<Modifier> { 
                     new KeepModifier(1, true) 
                 }),
@@ -657,7 +622,7 @@ namespace DotDice.Tests
 
             // D&D Disadvantage Roll: 2d20 keep lowest
             yield return new TestCaseData(
-                new MockRandomNumberGenerator(new List<int> { 12, 5 }),
+                new TestHelpers.MockRandomNumberGenerator(new List<int> { 12, 5 }),
                 new BasicRoll(2, new DieType.Basic(20), new List<Modifier> { 
                     new KeepModifier(1, false) 
                 }),
@@ -667,7 +632,7 @@ namespace DotDice.Tests
 
             // D&D Attack with Modifier: 1d20 + 5 (Proficiency + Ability)
             yield return new TestCaseData(
-                new MockRandomNumberGenerator(new List<int> { 18 }),
+                new TestHelpers.MockRandomNumberGenerator(new List<int> { 18 }),
                 new BasicRoll(1, new DieType.Basic(20), new List<Modifier> { 
                     new ConstantModifier(ArithmeticOperator.Add, 5) 
                 }),
@@ -677,7 +642,7 @@ namespace DotDice.Tests
 
             // D&D Critical Hit: 2d6 + 2d6 (crit) + 3 (modifier)
             yield return new TestCaseData(
-                new MockRandomNumberGenerator(new List<int> { 4, 6, 5, 3, 20 }),
+                new TestHelpers.MockRandomNumberGenerator(new List<int> { 4, 6, 5, 3, 20 }),
                 new BasicRoll(4, new DieType.Basic(6), new List<Modifier> { 
                     new ConstantModifier(ArithmeticOperator.Add, 3) 
                 }),
@@ -687,7 +652,7 @@ namespace DotDice.Tests
 
             // Shadowrun Success Test: 5d6, count 5s and 6s as successes
             yield return new TestCaseData(
-                new MockRandomNumberGenerator(new List<int> { 6, 2, 5, 3, 1 }),
+                new TestHelpers.MockRandomNumberGenerator(new List<int> { 6, 2, 5, 3, 1 }),
                 new BasicRoll(5, new DieType.Basic(6), new List<Modifier> { 
                     new SuccessModifier(ComparisonOperator.GreaterThan, 4) 
                 }),
@@ -697,7 +662,7 @@ namespace DotDice.Tests
 
             // World of Darkness: 4d10, 8+ success, 10s explode
             yield return new TestCaseData(
-                new MockRandomNumberGenerator(new List<int> { 10, 7, 9, 3, 8 }),
+                new TestHelpers.MockRandomNumberGenerator(new List<int> { 10, 7, 9, 3, 8 }),
                 new BasicRoll(4, new DieType.Basic(10), new List<Modifier> { 
                     new ExplodeModifier(ComparisonOperator.Equal, 10),
                     new SuccessModifier(ComparisonOperator.GreaterThan, 7)
@@ -708,7 +673,7 @@ namespace DotDice.Tests
 
             // FATE/Fudge: 4dF + 2 (skill)
             yield return new TestCaseData(
-                new MockRandomNumberGenerator(new List<int> { 1, -1, 0, 1 }),
+                new TestHelpers.MockRandomNumberGenerator(new List<int> { 1, -1, 0, 1 }),
                 new BasicRoll(4, new DieType.Fudge(), new List<Modifier> { 
                     new ConstantModifier(ArithmeticOperator.Add, 2) 
                 }),
@@ -718,7 +683,7 @@ namespace DotDice.Tests
 
             // Complex Attack Roll: 2d20 advantage, keep highest, add 5, crit on 20
             yield return new TestCaseData(
-                new MockRandomNumberGenerator(new List<int> { 20, 12, 6 }),
+                new TestHelpers.MockRandomNumberGenerator(new List<int> { 20, 12, 6 }),
                 new BasicRoll(2, new DieType.Basic(20), new List<Modifier> { 
                     new KeepModifier(1, true),
                     new ExplodeModifier(ComparisonOperator.Equal, 20),
@@ -730,7 +695,7 @@ namespace DotDice.Tests
 
             // Call of Cthulhu: d100 check against skill of 50, lower is better
             yield return new TestCaseData(
-                new MockRandomNumberGenerator(new List<int> { 23 }),
+                new TestHelpers.MockRandomNumberGenerator(new List<int> { 23 }),
                 new BasicRoll(1, new DieType.Percent(), new List<Modifier> { 
                     new SuccessModifier(ComparisonOperator.LessThan, 50) 
                 }),
@@ -740,7 +705,7 @@ namespace DotDice.Tests
 
             // Mixed Dice Pool: 2d6 + 1d8 + 1d4, drop lowest
             yield return new TestCaseData(
-                new MockRandomNumberGenerator(new List<int> { 3, 5, 7, 2 }),
+                new TestHelpers.MockRandomNumberGenerator(new List<int> { 3, 5, 7, 2 }),
                 new BasicRoll(4, new DieType.Basic(8), new List<Modifier> { 
                     new DropModifier(1, false)
                 }),
@@ -750,7 +715,7 @@ namespace DotDice.Tests
             
             // Dice Chain with Multiple Modifiers: 3d6, explode on 6s, keep 2 highest, add 4
             yield return new TestCaseData(
-                new MockRandomNumberGenerator(new List<int> { 6, 3, 4, 6, 5 }),
+                new TestHelpers.MockRandomNumberGenerator(new List<int> { 6, 3, 4, 6, 5 }),
                 new BasicRoll(3, new DieType.Basic(6), new List<Modifier> { 
                     new ExplodeModifier(ComparisonOperator.Equal, 6),
                     new KeepModifier(2, true),
@@ -762,7 +727,7 @@ namespace DotDice.Tests
 
             // Shadowrun with compound modifier: 3d6, compound on 6s, keep 2 highest, add 4
             yield return new TestCaseData(
-                new MockRandomNumberGenerator(new List<int> { 6, 3, 4, 6, 5 }),
+                new TestHelpers.MockRandomNumberGenerator(new List<int> { 6, 3, 4, 6, 5 }),
                 new BasicRoll(3, new DieType.Basic(6), new List<Modifier> { 
                     new CompoundingModifier(ComparisonOperator.Equal, 6),
                     new KeepModifier(2, true),
@@ -955,7 +920,7 @@ namespace DotDice.Tests
         public void Evaluate_ArithmeticRoll_SimpleAddition_ReturnsCorrectResult()
         {
             // Arrange
-            var mockRng = new MockRandomNumberGenerator(new List<int> { 3, 5 });
+            var mockRng = new TestHelpers.MockRandomNumberGenerator(new List<int> { 3, 5 });
             var evaluator = new DiceEvaluator(mockRng);
             
             var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
@@ -975,7 +940,7 @@ namespace DotDice.Tests
         public void Evaluate_ArithmeticRoll_SimpleSubtraction_ReturnsCorrectResult()
         {
             // Arrange
-            var mockRng = new MockRandomNumberGenerator(new List<int> { 15, 3 });
+            var mockRng = new TestHelpers.MockRandomNumberGenerator(new List<int> { 15, 3 });
             var evaluator = new DiceEvaluator(mockRng);
             
             var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
@@ -995,7 +960,7 @@ namespace DotDice.Tests
         public void Evaluate_ArithmeticRoll_WithConstants_ReturnsCorrectResult()
         {
             // Arrange
-            var mockRng = new MockRandomNumberGenerator(new List<int> { 10 });
+            var mockRng = new TestHelpers.MockRandomNumberGenerator(new List<int> { 10 });
             var evaluator = new DiceEvaluator(mockRng);
             
             var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
@@ -1016,7 +981,7 @@ namespace DotDice.Tests
         public void Evaluate_ArithmeticRoll_MultipleTerms_EvaluatesLeftToRight()
         {
             // Arrange
-            var mockRng = new MockRandomNumberGenerator(new List<int> { 6, 4, 2 });
+            var mockRng = new TestHelpers.MockRandomNumberGenerator(new List<int> { 6, 4, 2 });
             var evaluator = new DiceEvaluator(mockRng);
             
             var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
@@ -1038,7 +1003,7 @@ namespace DotDice.Tests
         public void Evaluate_ArithmeticRoll_WithModifiers_ReturnsCorrectResult()
         {
             // Arrange - d6 with explode, d4 with reroll once
-            var mockRng = new MockRandomNumberGenerator(new List<int> { 6, 3, 1, 4 });
+            var mockRng = new TestHelpers.MockRandomNumberGenerator(new List<int> { 6, 3, 1, 4 });
             var evaluator = new DiceEvaluator(mockRng);
             
             var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
@@ -1064,7 +1029,7 @@ namespace DotDice.Tests
         public void Evaluate_ArithmeticRoll_NegativeResult_ReturnsNegativeValue()
         {
             // Arrange
-            var mockRng = new MockRandomNumberGenerator(new List<int> { 2, 8 });
+            var mockRng = new TestHelpers.MockRandomNumberGenerator(new List<int> { 2, 8 });
             var evaluator = new DiceEvaluator(mockRng);
             
             var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
@@ -1084,7 +1049,7 @@ namespace DotDice.Tests
         public void Evaluate_ArithmeticRoll_ZeroResult_ReturnsZero()
         {
             // Arrange
-            var mockRng = new MockRandomNumberGenerator(new List<int> { 5 });
+            var mockRng = new TestHelpers.MockRandomNumberGenerator(new List<int> { 5 });
             var evaluator = new DiceEvaluator(mockRng);
             
             var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
@@ -1124,7 +1089,7 @@ namespace DotDice.Tests
         public void Evaluate_ArithmeticRoll_ComplexExpression_ReturnsCorrectResult()
         {
             // Arrange - Simulate the example from the issue: 3d20+5d6-1d4ro<2+1
-            var mockRng = new MockRandomNumberGenerator(new List<int> { 10, 15, 8, 4, 5, 6, 2, 3, 1, 3 });
+            var mockRng = new TestHelpers.MockRandomNumberGenerator(new List<int> { 10, 15, 8, 4, 5, 6, 2, 3, 1, 3 });
             var evaluator = new DiceEvaluator(mockRng);
             
             var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
@@ -1150,7 +1115,7 @@ namespace DotDice.Tests
         public void Evaluate_ArithmeticRoll_LargeNumbers_HandlesCorrectly()
         {
             // Arrange
-            var mockRng = new MockRandomNumberGenerator(new List<int> { 100 });
+            var mockRng = new TestHelpers.MockRandomNumberGenerator(new List<int> { 100 });
             var evaluator = new DiceEvaluator(mockRng);
             
             var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>
@@ -1171,7 +1136,7 @@ namespace DotDice.Tests
         public void Evaluate_ArithmeticRoll_SuccessModifiers_CalculatesCorrectly()
         {
             // Arrange - Roll 5d6 with success on 5+, then add a constant
-            var mockRng = new MockRandomNumberGenerator(new List<int> { 6, 3, 5, 2, 4 });
+            var mockRng = new TestHelpers.MockRandomNumberGenerator(new List<int> { 6, 3, 5, 2, 4 });
             var evaluator = new DiceEvaluator(mockRng);
             
             var roll = new ArithmeticRoll(new List<(ArithmeticOperator, Roll)>

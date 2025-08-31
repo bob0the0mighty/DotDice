@@ -12,7 +12,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(ParseRoll_BasicRolls_TestCases))]
         public void ParseRoll_BasicRolls_ReturnsExpectedResult(string input, List<int> randomValues, int expectedResult)
         {
-            var mockRng = new MockRandomNumberGenerator(randomValues);
+            var mockRng = new TestHelpers.MockRandomNumberGenerator(randomValues);
             int result = input.ParseRoll(mockRng);
             Assert.That(result, Is.EqualTo(expectedResult), $"Roll result should be {expectedResult}");
         }
@@ -38,7 +38,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(ParseRoll_ModifiedRolls_TestCases))]
         public void ParseRoll_ModifiedRolls_ReturnsExpectedResult(string input, List<int> randomValues, int expectedResult)
         {
-            var mockRng = new MockRandomNumberGenerator(randomValues);
+            var mockRng = new TestHelpers.MockRandomNumberGenerator(randomValues);
             int result = input.ParseRoll(mockRng);
             Assert.AreEqual(expectedResult, result, $"Roll result should be {expectedResult}");
         }
@@ -81,7 +81,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(ParseRoll_ComplexNotations_TestCases))]
         public void ParseRoll_ComplexNotations_ReturnsExpectedResult(string input, List<int> randomValues, int expectedResult)
         {
-            var mockRng = new MockRandomNumberGenerator(randomValues);
+            var mockRng = new TestHelpers.MockRandomNumberGenerator(randomValues);
             int result = input.ParseRoll(mockRng);
             Assert.AreEqual(expectedResult, result, $"Roll result should be {expectedResult}");
         }
@@ -153,7 +153,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(ParseRoll_RealWorldScenarios_TestCases))]
         public void ParseRoll_RealWorldScenarios_ReturnsExpectedResult(string input, List<int> randomValues, int expectedResult, string description)
         {
-            var mockRng = new MockRandomNumberGenerator(randomValues);
+            var mockRng = new TestHelpers.MockRandomNumberGenerator(randomValues);
             int result = input.ParseRoll(mockRng);
             Assert.AreEqual(expectedResult, result, $"{description}: Roll result should be {expectedResult}");
         }
@@ -210,7 +210,7 @@ namespace DotDice.Tests
         [TestCaseSource(nameof(ParseRoll_ArithmeticExpressions_TestCases))]
         public void ParseRoll_ArithmeticExpressions_ReturnsExpectedResult(string input, List<int> randomValues, int expectedResult)
         {
-            var mockRng = new MockRandomNumberGenerator(randomValues);
+            var mockRng = new TestHelpers.MockRandomNumberGenerator(randomValues);
             int result = input.ParseRoll(mockRng);
             Assert.AreEqual(expectedResult, result, $"Arithmetic roll result should be {expectedResult}");
         }
