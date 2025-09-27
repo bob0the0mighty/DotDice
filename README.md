@@ -25,7 +25,7 @@ A flexible and extensible dice rolling library for .NET applications, designed t
   - FATE/Fudge (fudge dice)
   - Call of Cthulhu (percentile tests)
 - Arithmetic roll expressions (e.g., `3d20+5d6-1d4+1`)
-- Detailed evaluation results with individual die events
+- Detailed evaluation results with individual die events and structural grouping information
 - Extensible architecture for adding custom dice types and modifiers
 
 ## Installation
@@ -93,6 +93,52 @@ foreach (var evt in detailedResult.Events)
     // evt.Significance shows if it was a critical hit, minimum roll, etc.
 }
 ```
+
+#### Arithmetic Expression Grouping
+
+For complex arithmetic expressions like "3d20-4d4+5", the detailed results now include structural information about which dice belonged to which group and what operations separated them:
+
+```csharp
+var result = "3d20kh1-4d4+5".ParseRollDetailed();
+
+// Group events by their roll group
+var groups = result.Events.GroupBy(e => e.GroupId).ToList();
+
+foreach (var group in groups)
+{
+    var op = group.First().GroupOperator;
+    var keptDice = group.Where(e => e.Status == DieStatus.Kept).ToList();
+    var droppedDice = group.Where(e => e.Status == DieStatus.Dropped).ToList();
+    
+    Console.WriteLine($"Group {group.Key} ({op}): Total = {keptDice.Sum(e => e.Value)}");
+    
+    if (keptDice.Any())
+        Console.WriteLine($"  Kept: {string.Join(", ", keptDice.Select(e => e.Value))}");
+        
+    if (droppedDice.Any()) 
+        Console.WriteLine($"  Dropped: {string.Join(", ", droppedDice.Select(e => e.Value))}");
+}
+
+// Output example:
+// Group 0 (Add): Total = 18
+//   Kept: 18
+//   Dropped: 5, 12
+// Group 1 (Subtract): Total = 14  
+//   Kept: 3, 4, 3, 4
+// Group 2 (Add): Total = 5
+//   Kept: 5
+```
+
+**Key Properties for Grouping:**
+- `GroupId`: Unique identifier for each roll group (0, 1, 2, etc.)
+- `GroupOperator`: The arithmetic operator for this group (`Add` or `Subtract`)
+- Single rolls (like "2d6") have `null` for both properties to maintain backward compatibility
+
+This makes it easy to:
+- Reconstruct the original expression structure
+- Show which dice were affected by modifiers in each group
+- Display results in a user-friendly grouped format
+- Implement custom logic based on roll groups
 
 ### Advanced API (Direct Object Creation)
 
