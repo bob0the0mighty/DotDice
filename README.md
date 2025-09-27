@@ -102,9 +102,11 @@ For complex arithmetic expressions like "3d20-4d4+5", the detailed results now i
 var result = "3d20kh1-4d4+5".ParseRollDetailed();
 
 // Group events by their roll group
-var groups = result.Events.GroupBy(e => e.GroupId).Where(g => g.Key != null).ToList();
+var groups = result.Events.GroupBy(e => e.GroupId).ToList();
 
-foreach (var group in groups)
+// Handle grouped events (arithmetic expressions)
+var groupedEvents = groups.Where(g => g.Key != null).ToList();
+foreach (var group in groupedEvents)
 {
     var op = group.First().GroupOperator;
     var keptDice = group.Where(e => e.Status == DieStatus.Kept).ToList();
@@ -117,6 +119,17 @@ foreach (var group in groups)
         
     if (droppedDice.Any()) 
         Console.WriteLine($"  Dropped: {string.Join(", ", droppedDice.Select(e => e.Value))}");
+}
+
+// Handle single roll events (no grouping information)
+var singleRollEvents = groups.Where(g => g.Key == null).SelectMany(g => g).ToList();
+if (singleRollEvents.Any())
+{
+    Console.WriteLine("Single Roll Events (no grouping):");
+    foreach (var evt in singleRollEvents)
+    {
+        Console.WriteLine($"  Die: {evt.DieType}, Value: {evt.Value}, Status: {evt.Status}");
+    }
 }
 
 // Output example:
