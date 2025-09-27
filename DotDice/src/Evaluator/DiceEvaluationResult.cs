@@ -13,6 +13,18 @@ namespace DotDice.Evaluator
         public RollSignificance Significance { get; init; }
         public DieStatus Status { get; set; } = DieStatus.Kept;
         public SuccessStatus Success { get; set; } = SuccessStatus.Neutral;
+        
+        /// <summary>
+        /// Identifies which roll group this event belongs to in arithmetic expressions.
+        /// Events with the same GroupId belong to the same roll group.
+        /// </summary>
+        public int? GroupId { get; init; }
+        
+        /// <summary>
+        /// The arithmetic operator that applies to this event's group in arithmetic expressions.
+        /// For example, in "3d20-4d4", the d20 events have Add, the d4 events have Subtract.
+        /// </summary>
+        public ArithmeticOperator? GroupOperator { get; init; }
     }
 
     /// <summary>
