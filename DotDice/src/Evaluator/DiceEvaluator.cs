@@ -81,6 +81,24 @@ namespace DotDice.Evaluator
                     throw new ArgumentException("Unknown roll type", nameof(roll));
             }
         }
+        
+        private DiceEvaluationResult EvaluateBasicRollDetailed(BasicRoll basicRoll, int? groupId = null, ArithmeticOperator? groupOperator = null)
+        {
+            // Generation Phase: Create initial events
+            var events = Enumerable.Range(0, basicRoll.NumberOfDice)
+                .Select(_ => RollDieEvent(basicRoll.DieType, DieEventType.Initial, groupId, groupOperator))
+                .ToList();
+
+            // Apply modifiers in the proper order
+            events = ApplyModifiersDetailed(events, basicRoll.Modifiers, basicRoll.DieType);
+
+            // Calculate final value from events that are not dropped or discarded
+            var finalValue = events
+                .Where(e => e.Status != DieStatus.Dropped && e.Status != DieStatus.Discarded)
+                .Sum(e => e.Value);
+
+            return new DiceEvaluationResult(finalValue, events);
+        }
 
         private int EvaluateBasicRoll(BasicRoll basicRoll)
         {
@@ -98,20 +116,7 @@ namespace DotDice.Evaluator
 
         private DiceEvaluationResult EvaluateBasicRollDetailed(BasicRoll basicRoll)
         {
-            // Generation Phase: Create initial events
-            var events = Enumerable.Range(0, basicRoll.NumberOfDice)
-                .Select(_ => RollDieEvent(basicRoll.DieType, DieEventType.Initial))
-                .ToList();
-
-            // Apply modifiers in the proper order
-            events = ApplyModifiersDetailed(events, basicRoll.Modifiers, basicRoll.DieType);
-
-            // Calculate final value from events that are not dropped or discarded
-            var finalValue = events
-                .Where(e => e.Status != DieStatus.Dropped && e.Status != DieStatus.Discarded)
-                .Sum(e => e.Value);
-
-            return new DiceEvaluationResult(finalValue, events);
+            return EvaluateBasicRollDetailed(basicRoll, null, null);
         }
 
         private int EvaluateArithmeticRoll(ArithmeticRoll arithmeticRoll)
@@ -142,10 +147,21 @@ namespace DotDice.Evaluator
         {
             int result = 0;
             var allEvents = new List<DieEvent>();
+            int groupId = 0; // Assign unique group IDs
             
             foreach (var (operation, roll) in arithmeticRoll.Terms)
             {
-                var rollResult = EvaluateDetailed(roll);
+                DiceEvaluationResult rollResult;
+                
+                // Evaluate the roll with group information
+                if (roll is BasicRoll basicRoll)
+                {
+                    rollResult = EvaluateBasicRollDetailed(basicRoll, groupId, operation);
+                }
+                else
+                {
+                    rollResult = EvaluateDetailed(roll);
+                }
                 
                 switch (operation)
                 {
@@ -160,7 +176,9 @@ namespace DotDice.Evaluator
                                 Type = DieEventType.Initial,
                                 Significance = RollSignificance.None,
                                 Status = DieStatus.Kept,
-                                Success = SuccessStatus.Neutral
+                                Success = SuccessStatus.Neutral,
+                                GroupId = groupId,
+                                GroupOperator = operation
                             });
                         }
                         break;
@@ -175,7 +193,9 @@ namespace DotDice.Evaluator
                                 Type = DieEventType.Initial,
                                 Significance = RollSignificance.None,
                                 Status = DieStatus.Kept,
-                                Success = SuccessStatus.Neutral
+                                Success = SuccessStatus.Neutral,
+                                GroupId = groupId,
+                                GroupOperator = operation
                             });
                         }
                         break;
@@ -183,7 +203,12 @@ namespace DotDice.Evaluator
                         throw new ArgumentException($"Unknown arithmetic operator: {operation}");
                 }
                 
-                allEvents.AddRange(rollResult.Events);
+                // For non-BasicRoll events (like constants from other sources), assign group info if missing
+                var eventsToAdd = rollResult.Events.Select(e => 
+                    e.GroupId.HasValue ? e : e with { GroupId = groupId, GroupOperator = operation }).ToList();
+                
+                allEvents.AddRange(eventsToAdd);
+                groupId++; // Increment group ID for next term
             }
             
             return new DiceEvaluationResult(result, allEvents);
@@ -201,7 +226,7 @@ namespace DotDice.Evaluator
             };
         }
 
-        private DieEvent RollDieEvent(DieType dieType, DieEventType eventType)
+        private DieEvent RollDieEvent(DieType dieType, DieEventType eventType, int? groupId = null, ArithmeticOperator? groupOperator = null)
         {
             var value = dieType switch
             {
@@ -221,7 +246,9 @@ namespace DotDice.Evaluator
                 DieType = dieType,
                 Significance = significance,
                 Status = DieStatus.Kept,
-                Success = SuccessStatus.Neutral
+                Success = SuccessStatus.Neutral,
+                GroupId = groupId,
+                GroupOperator = groupOperator
             };
         }
 
@@ -627,8 +654,8 @@ namespace DotDice.Evaluator
                     // Mark the original as discarded
                     evt.Status = DieStatus.Discarded;
 
-                    // Create a reroll event
-                    var rerollEvent = RollDieEvent(originalDieType, DieEventType.Reroll);
+                    // Create a reroll event (preserve group information from original event)
+                    var rerollEvent = RollDieEvent(originalDieType, DieEventType.Reroll, evt.GroupId, evt.GroupOperator);
                     result.Add(rerollEvent);
                 }
             }
@@ -660,8 +687,8 @@ namespace DotDice.Evaluator
                     // Mark current as discarded
                     currentEvent.Status = DieStatus.Discarded;
 
-                    // Create a reroll event
-                    currentEvent = RollDieEvent(originalDieType, DieEventType.Reroll);
+                    // Create a reroll event (preserve group information from original event)
+                    currentEvent = RollDieEvent(originalDieType, DieEventType.Reroll, evt.GroupId, evt.GroupOperator);
                     result.Add(currentEvent);
                 }
             }
@@ -691,8 +718,8 @@ namespace DotDice.Evaluator
                 while (explosionCounter < MaxExplosions &&
                        Compare(currentEvent.Value, explodeModifier.Operator, explodeModifier.Value))
                 {
-                    // Create explosion event
-                    currentEvent = RollDieEvent(originalDieType, DieEventType.Explosion);
+                    // Create explosion event (preserve group information from original event)
+                    currentEvent = RollDieEvent(originalDieType, DieEventType.Explosion, evt.GroupId, evt.GroupOperator);
                     result.Add(currentEvent);
 
                     explosionCounter++;
@@ -726,8 +753,8 @@ namespace DotDice.Evaluator
                 while (compoundCounter < MaxCompounds &&
                        Compare(currentValue, compoundingModifier.Operator, compoundingModifier.Value))
                 {
-                    // Create compound event
-                    var compoundEvent = RollDieEvent(originalDieType, DieEventType.Compound);
+                    // Create compound event (preserve group information from original event)
+                    var compoundEvent = RollDieEvent(originalDieType, DieEventType.Compound, evt.GroupId, evt.GroupOperator);
                     compoundEvents.Add(compoundEvent);
                     
                     // Add to total value
