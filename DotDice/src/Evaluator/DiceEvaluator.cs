@@ -805,7 +805,9 @@ namespace DotDice.Evaluator
                 ? rollableEvents.OrderByDescending(e => e.Value).Take(keepModifier.Count)
                 : rollableEvents.OrderBy(e => e.Value).Take(keepModifier.Count);
 
-            var keptEventSet = new HashSet<DieEvent>(eventsToKeep);
+            // Use reference equality comparer to ensure we track specific DieEvent instances,
+            // not value-based equality (since DieEvent is a record type)
+            var keptEventSet = new HashSet<DieEvent>(eventsToKeep, ReferenceEqualityComparer.Instance);
 
             // Mark non-kept rollable events as dropped
             foreach (var evt in rollableEvents)
