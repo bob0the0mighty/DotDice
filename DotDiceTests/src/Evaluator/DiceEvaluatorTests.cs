@@ -279,6 +279,182 @@ namespace DotDice.Tests
         }
 
         [Theory]
+        [TestCaseSource(nameof(Evaluate_BasicRoll_WithKeepHighest_DuplicateValues_TestCases))]
+        public void Evaluate_BasicRoll_WithKeepHighest_DuplicateValues(List<int> numbers, int numberOfDice, int keepCount, int expected, string description)
+        {
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
+            var modifiers = new List<Modifier> { new KeepModifier(keepCount, true) };
+            var basicRoll = new BasicRoll(numberOfDice, new DieType.Basic(12), modifiers);
+            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll), description);
+        }
+
+        public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithKeepHighest_DuplicateValues_TestCases()
+        {
+            // 3 dice with 2 maximum values
+            yield return new TestCaseData(new List<int> { 12, 12, 1 }, 3, 2, 24, "kh2: [12,12,1] should keep both 12s = 24");
+            yield return new TestCaseData(new List<int> { 12, 1, 12 }, 3, 2, 24, "kh2: [12,1,12] should keep both 12s = 24");
+            yield return new TestCaseData(new List<int> { 1, 12, 12 }, 3, 2, 24, "kh2: [1,12,12] should keep both 12s = 24");
+            
+            // 3 dice with 2 minimum values
+            yield return new TestCaseData(new List<int> { 1, 1, 12 }, 3, 2, 13, "kh2: [1,1,12] should keep one 1 and 12 = 13");
+            yield return new TestCaseData(new List<int> { 1, 12, 1 }, 3, 2, 13, "kh2: [1,12,1] should keep one 1 and 12 = 13");
+            yield return new TestCaseData(new List<int> { 12, 1, 1 }, 3, 2, 13, "kh2: [12,1,1] should keep one 1 and 12 = 13");
+            
+            // 4 dice with 2 maximums and 2 minimums
+            yield return new TestCaseData(new List<int> { 12, 12, 1, 1 }, 4, 2, 24, "kh2: [12,12,1,1] should keep both 12s = 24");
+            yield return new TestCaseData(new List<int> { 12, 1, 12, 1 }, 4, 2, 24, "kh2: [12,1,12,1] should keep both 12s = 24");
+            yield return new TestCaseData(new List<int> { 1, 12, 1, 12 }, 4, 2, 24, "kh2: [1,12,1,12] should keep both 12s = 24");
+            
+            // 4 dice with interspersed values
+            yield return new TestCaseData(new List<int> { 12, 6, 12, 1 }, 4, 2, 24, "kh2: [12,6,12,1] should keep both 12s = 24");
+            yield return new TestCaseData(new List<int> { 12, 6, 6, 1 }, 4, 2, 18, "kh2: [12,6,6,1] should keep 12 and one 6 = 18");
+            yield return new TestCaseData(new List<int> { 6, 6, 1, 1 }, 4, 2, 12, "kh2: [6,6,1,1] should keep both 6s = 12");
+            
+            // 5 dice with various combinations
+            yield return new TestCaseData(new List<int> { 12, 12, 12, 1, 1 }, 5, 3, 36, "kh3: [12,12,12,1,1] should keep all three 12s = 36");
+            yield return new TestCaseData(new List<int> { 12, 12, 6, 1, 1 }, 5, 3, 30, "kh3: [12,12,6,1,1] should keep both 12s and 6 = 30");
+            yield return new TestCaseData(new List<int> { 12, 6, 6, 6, 1 }, 5, 3, 24, "kh3: [12,6,6,6,1] should keep 12 and two 6s = 24");
+            yield return new TestCaseData(new List<int> { 6, 6, 6, 1, 1 }, 5, 3, 18, "kh3: [6,6,6,1,1] should keep all three 6s = 18");
+            yield return new TestCaseData(new List<int> { 12, 10, 8, 6, 4 }, 5, 3, 30, "kh3: [12,10,8,6,4] should keep 12,10,8 = 30");
+            
+            // Edge case: keep all when duplicates exist
+            yield return new TestCaseData(new List<int> { 6, 6, 6 }, 3, 3, 18, "kh3: [6,6,6] should keep all = 18");
+            yield return new TestCaseData(new List<int> { 1, 1, 2 }, 3, 2, 3, "kh2: [1,1,2] should keep one 1 and 2 = 3");
+        }
+
+        [Theory]
+        [TestCaseSource(nameof(Evaluate_BasicRoll_WithKeepLowest_DuplicateValues_TestCases))]
+        public void Evaluate_BasicRoll_WithKeepLowest_DuplicateValues(List<int> numbers, int numberOfDice, int keepCount, int expected, string description)
+        {
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
+            var modifiers = new List<Modifier> { new KeepModifier(keepCount, false) };
+            var basicRoll = new BasicRoll(numberOfDice, new DieType.Basic(12), modifiers);
+            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll), description);
+        }
+
+        public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithKeepLowest_DuplicateValues_TestCases()
+        {
+            // 3 dice with 2 maximum values
+            yield return new TestCaseData(new List<int> { 12, 12, 1 }, 3, 2, 13, "kl2: [12,12,1] should keep 1 and one 12 = 13");
+            yield return new TestCaseData(new List<int> { 12, 1, 12 }, 3, 2, 13, "kl2: [12,1,12] should keep 1 and one 12 = 13");
+            yield return new TestCaseData(new List<int> { 1, 12, 12 }, 3, 2, 13, "kl2: [1,12,12] should keep 1 and one 12 = 13");
+            
+            // 3 dice with 2 minimum values
+            yield return new TestCaseData(new List<int> { 1, 1, 12 }, 3, 2, 2, "kl2: [1,1,12] should keep both 1s = 2");
+            yield return new TestCaseData(new List<int> { 1, 12, 1 }, 3, 2, 2, "kl2: [1,12,1] should keep both 1s = 2");
+            yield return new TestCaseData(new List<int> { 12, 1, 1 }, 3, 2, 2, "kl2: [12,1,1] should keep both 1s = 2");
+            
+            // 4 dice with 2 maximums and 2 minimums
+            yield return new TestCaseData(new List<int> { 12, 12, 1, 1 }, 4, 2, 2, "kl2: [12,12,1,1] should keep both 1s = 2");
+            yield return new TestCaseData(new List<int> { 12, 1, 12, 1 }, 4, 2, 2, "kl2: [12,1,12,1] should keep both 1s = 2");
+            yield return new TestCaseData(new List<int> { 1, 12, 1, 12 }, 4, 2, 2, "kl2: [1,12,1,12] should keep both 1s = 2");
+            
+            // 4 dice with interspersed values
+            yield return new TestCaseData(new List<int> { 12, 6, 12, 1 }, 4, 2, 7, "kl2: [12,6,12,1] should keep 1 and 6 = 7");
+            yield return new TestCaseData(new List<int> { 12, 6, 6, 1 }, 4, 2, 7, "kl2: [12,6,6,1] should keep 1 and one 6 = 7");
+            yield return new TestCaseData(new List<int> { 6, 6, 1, 1 }, 4, 2, 2, "kl2: [6,6,1,1] should keep both 1s = 2");
+            
+            // 5 dice with various combinations
+            yield return new TestCaseData(new List<int> { 12, 12, 12, 1, 1 }, 5, 3, 14, "kl3: [12,12,12,1,1] should keep both 1s and one 12 = 14");
+            yield return new TestCaseData(new List<int> { 12, 12, 6, 1, 1 }, 5, 3, 8, "kl3: [12,12,6,1,1] should keep both 1s and 6 = 8");
+            yield return new TestCaseData(new List<int> { 12, 6, 6, 6, 1 }, 5, 3, 13, "kl3: [12,6,6,6,1] should keep 1 and two 6s = 13");
+            yield return new TestCaseData(new List<int> { 6, 6, 6, 1, 1 }, 5, 3, 8, "kl3: [6,6,6,1,1] should keep both 1s and one 6 = 8");
+            yield return new TestCaseData(new List<int> { 12, 10, 8, 6, 4 }, 5, 3, 18, "kl3: [12,10,8,6,4] should keep 4,6,8 = 18");
+            
+            // Edge case: keep all when duplicates exist
+            yield return new TestCaseData(new List<int> { 6, 6, 6 }, 3, 3, 18, "kl3: [6,6,6] should keep all = 18");
+            yield return new TestCaseData(new List<int> { 1, 1, 2 }, 3, 2, 2, "kl2: [1,1,2] should keep both 1s = 2");
+        }
+
+        [Theory]
+        [TestCaseSource(nameof(Evaluate_BasicRoll_WithDropHighest_DuplicateValues_TestCases))]
+        public void Evaluate_BasicRoll_WithDropHighest_DuplicateValues(List<int> numbers, int numberOfDice, int dropCount, int expected, string description)
+        {
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
+            var modifiers = new List<Modifier> { new DropModifier(dropCount, true) };
+            var basicRoll = new BasicRoll(numberOfDice, new DieType.Basic(12), modifiers);
+            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll), description);
+        }
+
+        public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithDropHighest_DuplicateValues_TestCases()
+        {
+            // 3 dice with 2 maximum values
+            yield return new TestCaseData(new List<int> { 12, 12, 1 }, 3, 2, 1, "dh2: [12,12,1] should drop both 12s = 1");
+            yield return new TestCaseData(new List<int> { 12, 1, 12 }, 3, 2, 1, "dh2: [12,1,12] should drop both 12s = 1");
+            yield return new TestCaseData(new List<int> { 1, 12, 12 }, 3, 2, 1, "dh2: [1,12,12] should drop both 12s = 1");
+            
+            // 3 dice with 2 minimum values
+            yield return new TestCaseData(new List<int> { 1, 1, 12 }, 3, 2, 1, "dh2: [1,1,12] should drop 12 and one 1 = 1");
+            yield return new TestCaseData(new List<int> { 1, 12, 1 }, 3, 2, 1, "dh2: [1,12,1] should drop 12 and one 1 = 1");
+            yield return new TestCaseData(new List<int> { 12, 1, 1 }, 3, 2, 1, "dh2: [12,1,1] should drop 12 and one 1 = 1");
+            
+            // 4 dice with 2 maximums and 2 minimums
+            yield return new TestCaseData(new List<int> { 12, 12, 1, 1 }, 4, 2, 2, "dh2: [12,12,1,1] should drop both 12s = 2");
+            yield return new TestCaseData(new List<int> { 12, 1, 12, 1 }, 4, 2, 2, "dh2: [12,1,12,1] should drop both 12s = 2");
+            yield return new TestCaseData(new List<int> { 1, 12, 1, 12 }, 4, 2, 2, "dh2: [1,12,1,12] should drop both 12s = 2");
+            
+            // 4 dice with interspersed values
+            yield return new TestCaseData(new List<int> { 12, 6, 12, 1 }, 4, 2, 7, "dh2: [12,6,12,1] should drop both 12s = 7");
+            yield return new TestCaseData(new List<int> { 12, 6, 6, 1 }, 4, 2, 7, "dh2: [12,6,6,1] should drop 12 and one 6 = 7");
+            yield return new TestCaseData(new List<int> { 6, 6, 1, 1 }, 4, 2, 2, "dh2: [6,6,1,1] should drop both 6s = 2");
+            
+            // 5 dice with various combinations
+            yield return new TestCaseData(new List<int> { 12, 12, 12, 1, 1 }, 5, 3, 2, "dh3: [12,12,12,1,1] should drop all three 12s = 2");
+            yield return new TestCaseData(new List<int> { 12, 12, 6, 1, 1 }, 5, 3, 2, "dh3: [12,12,6,1,1] should drop both 12s and 6 = 2");
+            yield return new TestCaseData(new List<int> { 12, 6, 6, 6, 1 }, 5, 3, 7, "dh3: [12,6,6,6,1] should drop 12 and two 6s = 7");
+            yield return new TestCaseData(new List<int> { 6, 6, 6, 1, 1 }, 5, 3, 2, "dh3: [6,6,6,1,1] should drop all three 6s = 2");
+            yield return new TestCaseData(new List<int> { 12, 10, 8, 6, 4 }, 5, 3, 10, "dh3: [12,10,8,6,4] should drop 12,10,8 = 10");
+            
+            // Edge case: drop all when duplicates exist
+            yield return new TestCaseData(new List<int> { 6, 6, 6 }, 3, 3, 0, "dh3: [6,6,6] should drop all = 0");
+            yield return new TestCaseData(new List<int> { 1, 1, 2 }, 3, 2, 1, "dh2: [1,1,2] should drop 2 and one 1 = 1");
+        }
+
+        [Theory]
+        [TestCaseSource(nameof(Evaluate_BasicRoll_WithDropLowest_DuplicateValues_TestCases))]
+        public void Evaluate_BasicRoll_WithDropLowest_DuplicateValues(List<int> numbers, int numberOfDice, int dropCount, int expected, string description)
+        {
+            var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
+            var modifiers = new List<Modifier> { new DropModifier(dropCount, false) };
+            var basicRoll = new BasicRoll(numberOfDice, new DieType.Basic(12), modifiers);
+            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll), description);
+        }
+
+        public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithDropLowest_DuplicateValues_TestCases()
+        {
+            // 3 dice with 2 maximum values
+            yield return new TestCaseData(new List<int> { 12, 12, 1 }, 3, 2, 12, "dl2: [12,12,1] should drop 1 and one 12 = 12");
+            yield return new TestCaseData(new List<int> { 12, 1, 12 }, 3, 2, 12, "dl2: [12,1,12] should drop 1 and one 12 = 12");
+            yield return new TestCaseData(new List<int> { 1, 12, 12 }, 3, 2, 12, "dl2: [1,12,12] should drop 1 and one 12 = 12");
+            
+            // 3 dice with 2 minimum values
+            yield return new TestCaseData(new List<int> { 1, 1, 12 }, 3, 2, 12, "dl2: [1,1,12] should drop both 1s = 12");
+            yield return new TestCaseData(new List<int> { 1, 12, 1 }, 3, 2, 12, "dl2: [1,12,1] should drop both 1s = 12");
+            yield return new TestCaseData(new List<int> { 12, 1, 1 }, 3, 2, 12, "dl2: [12,1,1] should drop both 1s = 12");
+            
+            // 4 dice with 2 maximums and 2 minimums
+            yield return new TestCaseData(new List<int> { 12, 12, 1, 1 }, 4, 2, 24, "dl2: [12,12,1,1] should drop both 1s = 24");
+            yield return new TestCaseData(new List<int> { 12, 1, 12, 1 }, 4, 2, 24, "dl2: [12,1,12,1] should drop both 1s = 24");
+            yield return new TestCaseData(new List<int> { 1, 12, 1, 12 }, 4, 2, 24, "dl2: [1,12,1,12] should drop both 1s = 24");
+            
+            // 4 dice with interspersed values
+            yield return new TestCaseData(new List<int> { 12, 6, 12, 1 }, 4, 2, 24, "dl2: [12,6,12,1] should drop 1 and 6 = 24");
+            yield return new TestCaseData(new List<int> { 12, 6, 6, 1 }, 4, 2, 18, "dl2: [12,6,6,1] should drop 1 and one 6 = 18");
+            yield return new TestCaseData(new List<int> { 6, 6, 1, 1 }, 4, 2, 12, "dl2: [6,6,1,1] should drop both 1s = 12");
+            
+            // 5 dice with various combinations
+            yield return new TestCaseData(new List<int> { 12, 12, 12, 1, 1 }, 5, 3, 24, "dl3: [12,12,12,1,1] should drop both 1s and one 12 = 24");
+            yield return new TestCaseData(new List<int> { 12, 12, 6, 1, 1 }, 5, 3, 24, "dl3: [12,12,6,1,1] should drop both 1s and 6 = 24");
+            yield return new TestCaseData(new List<int> { 12, 6, 6, 6, 1 }, 5, 3, 18, "dl3: [12,6,6,6,1] should drop 1 and two 6s = 18");
+            yield return new TestCaseData(new List<int> { 6, 6, 6, 1, 1 }, 5, 3, 12, "dl3: [6,6,6,1,1] should drop both 1s and one 6 = 12");
+            yield return new TestCaseData(new List<int> { 12, 10, 8, 6, 4 }, 5, 3, 22, "dl3: [12,10,8,6,4] should drop 4,6,8 = 22");
+            
+            // Edge case: drop all when duplicates exist
+            yield return new TestCaseData(new List<int> { 6, 6, 6 }, 3, 3, 0, "dl3: [6,6,6] should drop all = 0");
+            yield return new TestCaseData(new List<int> { 1, 1, 2 }, 3, 2, 2, "dl2: [1,1,2] should drop both 1s = 2");
+        }
+
+        [Theory]
         [TestCaseSource(nameof(Evaluate_BasicRoll_WithRerollOnceModifier_TestCases))]
         public void Evaluate_BasicRoll_WithRerollOnceModifier(List<int> numbers, int numberOfDice, DieType dieType, ComparisonOperator comparisonOperator, int value, int expected)
         {
