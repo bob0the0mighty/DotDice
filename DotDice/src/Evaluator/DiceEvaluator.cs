@@ -423,48 +423,30 @@ namespace DotDice.Evaluator
 
         private List<rollResult> ApplyKeepModifier(List<rollResult> rolls, KeepModifier keepModifier)
         {
-            var staticRolls = rolls.Where(x => x.type is DieType.Constant || x.type is DieType.Success)
-                .ToList();
-            var dynamicRolls = rolls.Where(x => x.type is not DieType.Constant && x.type is not DieType.Success)
-                .ToList();
-
-            if (keepModifier.KeepHighest)
-            {
-                return dynamicRolls.OrderByDescending(x => x.result)
-                    .Take(keepModifier.Count)
-                    .Concat(staticRolls)
-                    .ToList();
-            }
-            else
-            {
-                return dynamicRolls.OrderBy(x => x.result)
-                    .Take(keepModifier.Count)
-                    .Concat(staticRolls)
-                    .ToList();
-            }
+            return ApplyKeepOrDropModifier(rolls, keepModifier.Count, keepModifier.KeepHighest, isKeep: true);
         }
 
         private List<rollResult> ApplyDropModifier(List<rollResult> rolls, DropModifier dropModifier)
+        {
+            return ApplyKeepOrDropModifier(rolls, dropModifier.Count, dropModifier.DropHighest, isKeep: false);
+        }
+
+        private List<rollResult> ApplyKeepOrDropModifier(List<rollResult> rolls, int count, bool selectHighest, bool isKeep)
         {
             var staticRolls = rolls.Where(x => x.type is DieType.Constant || x.type is DieType.Success)
                 .ToList();
             var dynamicRolls = rolls.Where(x => x.type is not DieType.Constant && x.type is not DieType.Success)
                 .ToList();
 
-            if (dropModifier.DropHighest)
-            {
-                return rolls.OrderByDescending(x => x.result)
-                    .Skip(dropModifier.Count)
-                    .Concat(staticRolls)
-                    .ToList();
-            }
-            else
-            {
-                return rolls.OrderBy(x => x.result)
-                    .Skip(dropModifier.Count)
-                    .Concat(staticRolls)
-                    .ToList();
-            }
+            var ordered = selectHighest 
+                ? dynamicRolls.OrderByDescending(x => x.result)
+                : dynamicRolls.OrderBy(x => x.result);
+
+            var selected = isKeep 
+                ? ordered.Take(count)
+                : ordered.Skip(count);
+
+            return selected.Concat(staticRolls).ToList();
         }
 
         private List<rollResult> ApplyConstantModifier(List<rollResult> rolls, ConstantModifier constantModifier)
@@ -790,49 +772,55 @@ namespace DotDice.Evaluator
 
         private void ApplyKeepModifierDetailed(List<DieEvent> events, KeepModifier keepModifier)
         {
-            // Only process rollable events that aren't already discarded
-            var rollableEvents = events
-                .Where(e => e.Status != DieStatus.Discarded && ShouldProcessEvent(e))
-                .ToList();
-
-            if (rollableEvents.Count <= keepModifier.Count)
-            {
-                // Keep all if we have fewer than or equal to the keep count
-                return;
-            }
-
-            var eventsToKeep = keepModifier.KeepHighest
-                ? rollableEvents.OrderByDescending(e => e.Value).Take(keepModifier.Count)
-                : rollableEvents.OrderBy(e => e.Value).Take(keepModifier.Count);
-
-            // Use reference equality comparer to ensure we track specific DieEvent instances,
-            // not value-based equality (since DieEvent is a record type)
-            var keptEventSet = new HashSet<DieEvent>(eventsToKeep, ReferenceEqualityComparer.Instance);
-
-            // Mark non-kept rollable events as dropped
-            foreach (var evt in rollableEvents)
-            {
-                if (!keptEventSet.Contains(evt))
-                {
-                    evt.Status = DieStatus.Dropped;
-                }
-            }
+            ApplyKeepOrDropModifierDetailed(events, keepModifier.Count, keepModifier.KeepHighest, isKeep: true);
         }
 
         private void ApplyDropModifierDetailed(List<DieEvent> events, DropModifier dropModifier)
+        {
+            ApplyKeepOrDropModifierDetailed(events, dropModifier.Count, dropModifier.DropHighest, isKeep: false);
+        }
+
+        private void ApplyKeepOrDropModifierDetailed(List<DieEvent> events, int count, bool selectHighest, bool isKeep)
         {
             // Only process rollable events that aren't already discarded
             var rollableEvents = events
                 .Where(e => e.Status != DieStatus.Discarded && ShouldProcessEvent(e))
                 .ToList();
 
-            var eventsToDrop = dropModifier.DropHighest
-                ? rollableEvents.OrderByDescending(e => e.Value).Take(dropModifier.Count)
-                : rollableEvents.OrderBy(e => e.Value).Take(dropModifier.Count);
-
-            foreach (var evt in eventsToDrop)
+            if (isKeep && rollableEvents.Count <= count)
             {
-                evt.Status = DieStatus.Dropped;
+                // Keep all if we have fewer than or equal to the keep count
+                return;
+            }
+
+            var ordered = selectHighest
+                ? rollableEvents.OrderByDescending(e => e.Value)
+                : rollableEvents.OrderBy(e => e.Value);
+
+            var selectedEvents = ordered.Take(count);
+
+            if (isKeep)
+            {
+                // Use reference equality comparer to ensure we track specific DieEvent instances,
+                // not value-based equality (since DieEvent is a record type)
+                var keptEventSet = new HashSet<DieEvent>(selectedEvents, ReferenceEqualityComparer.Instance);
+
+                // Mark non-kept rollable events as dropped
+                foreach (var evt in rollableEvents)
+                {
+                    if (!keptEventSet.Contains(evt))
+                    {
+                        evt.Status = DieStatus.Dropped;
+                    }
+                }
+            }
+            else
+            {
+                // For drop, mark the selected events as dropped
+                foreach (var evt in selectedEvents)
+                {
+                    evt.Status = DieStatus.Dropped;
+                }
             }
         }
 
