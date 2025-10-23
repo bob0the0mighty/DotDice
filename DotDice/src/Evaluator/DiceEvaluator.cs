@@ -792,6 +792,15 @@ namespace DotDice.Evaluator
                 // Keep all if we have fewer than or equal to the keep count
                 return;
             }
+            else if (!isKeep && rollableEvents.Count <= count)
+            {
+                // Drop all if we have fewer than or equal to the drop count
+                foreach (var evt in rollableEvents)
+                {
+                    evt.Status = DieStatus.Dropped;
+                }
+                return;
+            }
 
             var ordered = selectHighest
                 ? rollableEvents.OrderByDescending(e => e.Value)
