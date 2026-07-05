@@ -123,7 +123,7 @@ namespace DotDice.Tests
         {
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var basicRoll = new BasicRoll(numberOfDice, new DieType.Percent(), new List<Modifier>());
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected));
         }
 
         public static IEnumerable<TestCaseData> Evaluate_PercentRoll_ReturnsSumOfDice_TestCases()
@@ -141,7 +141,7 @@ namespace DotDice.Tests
         {
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var basicRoll = new BasicRoll(numberOfDice, new DieType.Fudge(), new List<Modifier>());
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected));
         }
 
         public static IEnumerable<TestCaseData> Evaluate_FudgeRoll_ReturnsSumOfDice_TestCases()
@@ -161,7 +161,7 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new KeepModifier(keepCount, true) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected));
         }
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithKeepHighestModifier_TestCases()
@@ -192,7 +192,7 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new KeepModifier(keepCount, false) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected));
         }
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithKeepLowestModifier_TestCases()
@@ -223,7 +223,7 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new DropModifier(dropCount, true) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected));
         }
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithDropHighestModifier_TestCases()
@@ -254,7 +254,7 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new DropModifier(dropCount, false) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected));
         }
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithDropLowestModifier_TestCases()
@@ -285,7 +285,7 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new KeepModifier(keepCount, true) };
             var basicRoll = new BasicRoll(numberOfDice, new DieType.Basic(12), modifiers);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll), description);
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected), description);
         }
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithKeepHighest_DuplicateValues_TestCases()
@@ -329,7 +329,7 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new KeepModifier(keepCount, false) };
             var basicRoll = new BasicRoll(numberOfDice, new DieType.Basic(12), modifiers);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll), description);
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected), description);
         }
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithKeepLowest_DuplicateValues_TestCases()
@@ -373,7 +373,7 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new DropModifier(dropCount, true) };
             var basicRoll = new BasicRoll(numberOfDice, new DieType.Basic(12), modifiers);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll), description);
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected), description);
         }
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithDropHighest_DuplicateValues_TestCases()
@@ -417,7 +417,7 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new DropModifier(dropCount, false) };
             var basicRoll = new BasicRoll(numberOfDice, new DieType.Basic(12), modifiers);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll), description);
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected), description);
         }
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithDropLowest_DuplicateValues_TestCases()
@@ -461,7 +461,7 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new RerollOnceModifier(comparisonOperator, value) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected));
         }
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithRerollOnceModifier_TestCases()
@@ -487,7 +487,7 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new RerollMultipleModifier(comparisonOperator, value) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected));
         }
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithRerollMultipleModifier_TestCases()
@@ -521,7 +521,7 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(rng);
             var modifiers = new List<Modifier> { new ExplodeModifier(comparisonOperator, value) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected));
         }
 
         private static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithExplodeModifier_TestCases()
@@ -555,7 +555,7 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(rng);
             var modifiers = new List<Modifier> { new CompoundingModifier(comparisonOperator, value) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected));
         }
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithCompoundingModifier_TestCases()
@@ -589,7 +589,7 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new SuccessModifier(comparisonOperator, value) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected));
         }
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithSuccessModifier_TestCases()
@@ -632,7 +632,7 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = new List<Modifier> { new FailureModifier(comparisonOperator, value) };
             var basicRoll = new BasicRoll(numberOfDice, dieType, modifiers);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected));
         }
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithFailureModifier_TestCases()
@@ -671,7 +671,7 @@ namespace DotDice.Tests
         {
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var basicRoll = new BasicRoll(numbers.Count, new DieType.Basic(6), mods);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected));
         }
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithConstantModifier_TestCases()
@@ -687,7 +687,7 @@ namespace DotDice.Tests
             var evaluator = new DiceEvaluator(new TestHelpers.MockRandomNumberGenerator(numbers));
             var modifiers = mods;
             var basicRoll = new BasicRoll(numbers.Count, new DieType.Basic(6), modifiers);
-            Assert.AreEqual(expected, evaluator.Evaluate(basicRoll));
+            Assert.That(evaluator.Evaluate(basicRoll), Is.EqualTo(expected));
         }
 
         public static IEnumerable<TestCaseData> Evaluate_BasicRoll_WithConstantModifierAndAnotherModifier_TestCases()
@@ -771,7 +771,7 @@ namespace DotDice.Tests
         public void Evaluate_RealWorldScenarios_CalculatesCorrectly(IRandomNumberGenerator<int> rng, Roll roll, int expected, string scenarioDescription)
         {
             var evaluator = new DiceEvaluator(rng);
-            Assert.AreEqual(expected, evaluator.Evaluate(roll), $"Failed scenario: {scenarioDescription}");
+            Assert.That(evaluator.Evaluate(roll), Is.EqualTo(expected), $"Failed scenario: {scenarioDescription}");
         }
 
         public static IEnumerable<TestCaseData> Evaluate_RealWorldScenarios_TestCases()
@@ -857,16 +857,18 @@ namespace DotDice.Tests
                 "FATE/Fudge: 4dF+2 (1,-1,0,1+2) = 3"
             );
 
-            // Complex Attack Roll: 2d20 advantage, keep highest, add 5, crit on 20
+            // Complex Attack Roll: 2d20 advantage, keep highest, add 5, crit on 20.
+            // Phase model: explosions are generated first (20 explodes into a new 6),
+            // then kh1 keeps the single highest die of the whole pool (20), then +5.
             yield return new TestCaseData(
                 new TestHelpers.MockRandomNumberGenerator(new List<int> { 20, 12, 6 }),
-                new BasicRoll(2, new DieType.Basic(20), new List<Modifier> { 
+                new BasicRoll(2, new DieType.Basic(20), new List<Modifier> {
                     new KeepModifier(1, true),
                     new ExplodeModifier(ComparisonOperator.Equal, 20),
                     new ConstantModifier(ArithmeticOperator.Add, 5)
                 }),
-                31, // 20 (first roll) + 6 (explosion) + 5 (modifier) = 31
-                "Complex Attack: 1d20 advantage, explode on 20, +5 modifier (20->6, 5) = 31"
+                25, // kh1 keeps the 20; the 12 and the exploded 6 are dropped; +5 = 25
+                "Complex Attack: 2d20kh1 exploding on 20, +5 modifier (20,12, explode 6; keep 20) = 25"
             );
 
             // Call of Cthulhu: d100 check against skill of 50, lower is better
@@ -930,7 +932,7 @@ namespace DotDice.Tests
             int combinedResult = resultCombiner(results);
             
             // Assert the combined result matches the expected value
-            Assert.AreEqual(expected, combinedResult, description);
+            Assert.That(combinedResult, Is.EqualTo(expected), description);
         }
         
         public static IEnumerable<TestCaseData> Evaluate_MultipleRoll_Scenarios_TestCases()

@@ -40,7 +40,7 @@ namespace DotDice.Tests
         {
             var mockRng = new TestHelpers.MockRandomNumberGenerator(randomValues);
             int result = input.ParseRoll(mockRng);
-            Assert.AreEqual(expectedResult, result, $"Roll result should be {expectedResult}");
+            Assert.That(result, Is.EqualTo(expectedResult), $"Roll result should be {expectedResult}");
         }
 
         public static IEnumerable<TestCaseData> ParseRoll_ModifiedRolls_TestCases()
@@ -83,7 +83,7 @@ namespace DotDice.Tests
         {
             var mockRng = new TestHelpers.MockRandomNumberGenerator(randomValues);
             int result = input.ParseRoll(mockRng);
-            Assert.AreEqual(expectedResult, result, $"Roll result should be {expectedResult}");
+            Assert.That(result, Is.EqualTo(expectedResult), $"Roll result should be {expectedResult}");
         }
 
         public static IEnumerable<TestCaseData> ParseRoll_ComplexNotations_TestCases()
@@ -139,10 +139,10 @@ namespace DotDice.Tests
             int result4 = " 1d6 ".ParseRoll(mockRng);
             
             // All should have the same result
-            Assert.AreEqual(4, result1);
-            Assert.AreEqual(4, result2);
-            Assert.AreEqual(4, result3);
-            Assert.AreEqual(4, result4);
+            Assert.That(result1, Is.EqualTo(4));
+            Assert.That(result2, Is.EqualTo(4));
+            Assert.That(result3, Is.EqualTo(4));
+            Assert.That(result4, Is.EqualTo(4));
         }
 
         #endregion
@@ -155,7 +155,7 @@ namespace DotDice.Tests
         {
             var mockRng = new TestHelpers.MockRandomNumberGenerator(randomValues);
             int result = input.ParseRoll(mockRng);
-            Assert.AreEqual(expectedResult, result, $"{description}: Roll result should be {expectedResult}");
+            Assert.That(result, Is.EqualTo(expectedResult), $"{description}: Roll result should be {expectedResult}");
         }
 
         public static IEnumerable<TestCaseData> ParseRoll_RealWorldScenarios_TestCases()
@@ -190,16 +190,16 @@ namespace DotDice.Tests
             
             // Test with exploding dice (should hit the explosion limit)
             int result1 = "1d6!=6".ParseRoll(repeatingRng);
-            Assert.AreEqual(606, result1, "Exploding dice should hit the explosion limit");
+            Assert.That(result1, Is.EqualTo(606), "Exploding dice should hit the explosion limit");
             
             // Test with compound dice (should hit the compound limit)
             int result2 = "1d6^=6".ParseRoll(repeatingRng);
-            Assert.AreEqual(606, result2, "Compounding dice should hit the compound limit");
+            Assert.That(result2, Is.EqualTo(606), "Compounding dice should hit the compound limit");
             
             // Test with success counting
             var repeatingRng3 = new RepeatingRandomNumberGenerator(5);
             int result3 = "10d6>4".ParseRoll(repeatingRng3);
-            Assert.AreEqual(10, result3, "All dice should succeed");
+            Assert.That(result3, Is.EqualTo(10), "All dice should succeed");
         }
 
         #endregion
@@ -212,7 +212,7 @@ namespace DotDice.Tests
         {
             var mockRng = new TestHelpers.MockRandomNumberGenerator(randomValues);
             int result = input.ParseRoll(mockRng);
-            Assert.AreEqual(expectedResult, result, $"Arithmetic roll result should be {expectedResult}");
+            Assert.That(result, Is.EqualTo(expectedResult), $"Arithmetic roll result should be {expectedResult}");
         }
 
         public static IEnumerable<TestCaseData> ParseRoll_ArithmeticExpressions_TestCases()
