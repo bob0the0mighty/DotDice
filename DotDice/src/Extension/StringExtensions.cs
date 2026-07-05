@@ -20,7 +20,11 @@ namespace DotDice.Extension
             var parser = DiceParser.Roll.Parse(input);
             if (parser is null || !parser.Success)
             {
-                throw new FormatException("Invalid roll format.");
+                // Include the parser's diagnostic (position, expected tokens) so callers
+                // can surface a useful message instead of a generic failure.
+                throw new FormatException(parser is null
+                    ? "Invalid roll format."
+                    : $"Invalid roll format. {parser.Error}".TrimEnd());
             }
 
             var evaluator = randomNumberGenerator != null 
@@ -42,7 +46,11 @@ namespace DotDice.Extension
             var parser = DiceParser.Roll.Parse(input);
             if (parser is null || !parser.Success)
             {
-                throw new FormatException("Invalid roll format.");
+                // Include the parser's diagnostic (position, expected tokens) so callers
+                // can surface a useful message instead of a generic failure.
+                throw new FormatException(parser is null
+                    ? "Invalid roll format."
+                    : $"Invalid roll format. {parser.Error}".TrimEnd());
             }
 
             var evaluator = randomNumberGenerator != null 

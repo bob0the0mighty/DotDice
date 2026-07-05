@@ -1,16 +1,19 @@
-<roll>              ::= <basic_roll> | <constant>
+<roll>              ::= <arithmetic_roll> | <basic_roll> | <constant>
 
-<basic_roll>        ::= <number_of_dice> "d" <die_type_section> <modifiers> 
+<arithmetic_roll>   ::= <roll_term> (<arithmetic_op> <roll_term>)+
 
-<arithmetic>        ::= <addition>
-                      | <subtraction>
+<roll_term>         ::= <basic_roll> | <constant> // basic_roll here excludes <constant_modifier>; trailing +N/-N parse as arithmetic terms
 
-<constant>          ::= <integer>
+<arithmetic_op>     ::= "+" | "-"
 
-<number_of_dice>    ::= <integer>
+<basic_roll>        ::= <number_of_dice> "d" <die_type_section> <modifiers>
+
+<constant>          ::= <positive_integer>
+
+<number_of_dice>    ::= <positive_integer>
                       | ""  // Empty string represents 1 die
 
-<die_type_section>  ::= <integer>
+<die_type_section>  ::= <positive_integer>
                       | "%"
                       | "F"
 
@@ -19,12 +22,11 @@
 <modifier>          ::= <keep_modifier>
                       | <drop_modifier>
                       | <reroll_modifier>
+                      | <compounding_modifier> // tried before explode so "!!" is a compound
                       | <explode_modifier>
-                      | <compounding_modifier>
                       | <success_modifier>
                       | <failure_modifier>
-                      | <sort_modifier>
-                      | <contstant_modifier>
+                      | <constant_modifier>
 
 <keep_modifier>     ::= "kl" <keep_drop_value> //keep keep_drop_value lowest results
                       | "kh" <keep_drop_value> //keep keep_drop_value highest results
@@ -32,26 +34,29 @@
 <drop_modifier>     ::= "dl" <keep_drop_value> //drop keep_drop_value lowest results
                       | "dh" <keep_drop_value> //drop keep_drop_value highest results
 
-<keep_drop_value>   ::= <integer>
-                      | "" //Empty string indicates default behavior
+<keep_drop_value>   ::= <positive_integer>
+                      | "" //Empty string defaults to 1
 
-<reroll_modifier>   ::= "rc" <comparison_point> // continuesly re-roll any result that meets comparison_point
-                      | "ro" <comparison_point> // re-roll once any result that meets comparison_point
+<reroll_modifier>   ::= "rc" <comparison_or_value> // continuously re-roll any result that meets the comparison
+                      | "ro" <comparison_or_value> // re-roll once any result that meets the comparison
 
-<explode_modifier>  ::= "!" <comparison_point> // add an additional dice role for every comparison_point result
+<explode_modifier>  ::= "!" <comparison_or_value>? // add an additional die roll for every matching result; bare "!" explodes on the die's maximum face
 
-<compounding_modifier> ::= "^" <comparison_point> //if comparison_point is met, then roll another dice and add it to the total. This new roll can compound also.
+<compounding_modifier> ::= ("^" | "!!") <comparison_or_value>? // like explode, but adds to the same die's total; bare form compounds on the maximum face
 
 <success_modifier>  ::= <comparison_point>
 
-<failure_modifier>  ::= "f" <comparison_point> 
+<failure_modifier>  ::= "f" <comparison_point>
 
-<constant_modifier> ::= <arithmetic> <constant>
+<constant_modifier> ::= <arithmetic_op> <positive_integer>
 
-<comparison_point>  ::= <comparison_operator> <integer>
+<comparison_or_value> ::= <comparison_point>
+                        | <positive_integer> // bare integer means equality: "ro1" == "ro=1"
+
+<comparison_point>  ::= <comparison_operator> <positive_integer>
 
 <comparison_operator> ::= "=" | ">" | "<"
 
-<integer>           ::= ["-"] <digit>+
+<positive_integer>  ::= <digit>+ // must be > 0
 
 <digit>             ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"

@@ -62,6 +62,8 @@ namespace DotDice.Tests
         [TestCase("!=5", ComparisonOperator.Equal, 5)]
         [TestCase("!>10", ComparisonOperator.GreaterThan, 10)]
         [TestCase("!<3", ComparisonOperator.LessThan, 3)]
+        [TestCase("!5", ComparisonOperator.Equal, 5)]  // Bare integer shorthand for equality
+        [TestCase("!", ComparisonOperator.Equal, DiceParser.MaxFaceSentinel)]  // Bare "!" explodes on max face (resolved when the roll is built)
         public void ExplodeModifier_Parse_ValidInput_ShouldSucceed(string input, ComparisonOperator expectedOp, int expectedValue)
         {
             var result = DiceParser.explodeModifier.Parse(input);
@@ -72,12 +74,14 @@ namespace DotDice.Tests
             Assert.That(modifier.Value, Is.EqualTo(expectedValue));
         }
 
-        [TestCase("!5")]  // Missing operator
-        [TestCase("!>")]  // Missing value
-        public void ExplodeModifier_Parse_InvalidInput_ShouldFail(string input)
+        // "!>" (operator without value) is no longer rejected at the single-modifier level,
+        // because bare "!" is now a valid prefix; the dangling ">" must fail at the Roll level.
+        [TestCase("d6!>")]
+        [TestCase("2d6!<")]
+        public void ExplodeModifier_DanglingComparison_ShouldFailAtRollLevel(string input)
         {
-            var result = DiceParser.explodeModifier.Parse(input);
-            Assert.IsFalse(result.Success, "Parser should fail for invalid explode modifier");
+            var result = DiceParser.Roll.Parse(input);
+            Assert.IsFalse(result.Success, "Roll parser should fail for dangling comparison after '!'");
         }
 
         #endregion
@@ -87,6 +91,11 @@ namespace DotDice.Tests
         [TestCase("^=5", ComparisonOperator.Equal, 5)]
         [TestCase("^>10", ComparisonOperator.GreaterThan, 10)]
         [TestCase("^<3", ComparisonOperator.LessThan, 3)]
+        [TestCase("^5", ComparisonOperator.Equal, 5)]    // Bare integer shorthand for equality
+        [TestCase("^", ComparisonOperator.Equal, DiceParser.MaxFaceSentinel)]    // Bare "^" compounds on max face
+        [TestCase("!!", ComparisonOperator.Equal, DiceParser.MaxFaceSentinel)]   // "!!" is the common VTT alias for compounding
+        [TestCase("!!=6", ComparisonOperator.Equal, 6)]
+        [TestCase("!!6", ComparisonOperator.Equal, 6)]
         public void CompoundingModifier_Parse_ValidInput_ShouldSucceed(string input, ComparisonOperator expectedOp, int expectedValue)
         {
             var result = DiceParser.compoundingModifier.Parse(input);
@@ -97,12 +106,13 @@ namespace DotDice.Tests
             Assert.That(modifier.Value, Is.EqualTo(expectedValue));
         }
 
-        [TestCase("^5")]  // Missing operator
-        [TestCase("^>")]  // Missing value
-        public void CompoundingModifier_Parse_InvalidInput_ShouldFail(string input)
+        // "^>" (operator without value) must fail at the Roll level now that bare "^" is valid.
+        [TestCase("d6^>")]
+        [TestCase("2d6^<")]
+        public void CompoundingModifier_DanglingComparison_ShouldFailAtRollLevel(string input)
         {
-            var result = DiceParser.compoundingModifier.Parse(input);
-            Assert.IsFalse(result.Success, "Parser should fail for invalid compounding modifier");
+            var result = DiceParser.Roll.Parse(input);
+            Assert.IsFalse(result.Success, "Roll parser should fail for dangling comparison after '^'");
         }
 
         #endregion
@@ -111,6 +121,7 @@ namespace DotDice.Tests
 
         [TestCase("ro=5", ComparisonOperator.Equal, 5, true)]
         [TestCase("ro>10", ComparisonOperator.GreaterThan, 10, false)]
+        [TestCase("ro1", ComparisonOperator.Equal, 1, true)]  // Bare integer shorthand: "ro1" == "ro=1"
         public void RerollOnceModifier_Parse_ValidInput_ShouldSucceed(string input, ComparisonOperator expectedOp, int expectedValue, bool expectedOnlyOnce)
         {
             var result = DiceParser.rerollOnceModifier.Parse(input);
@@ -121,8 +132,8 @@ namespace DotDice.Tests
             Assert.That(modifier.Value, Is.EqualTo(expectedValue));
         }
 
-        [TestCase("ro5")]  // Missing operator
         [TestCase("ro>")]  // Missing value
+        [TestCase("ro")]   // Missing comparison entirely
         public void RerollOnceModifier_Parse_InvalidInput_ShouldFail(string input)
         {
             var result = DiceParser.rerollOnceModifier.Parse(input);
@@ -135,6 +146,7 @@ namespace DotDice.Tests
 
         [TestCase("rc=5", ComparisonOperator.Equal, 5)]
         [TestCase("rc>10", ComparisonOperator.GreaterThan, 10)]
+        [TestCase("rc2", ComparisonOperator.Equal, 2)]  // Bare integer shorthand: "rc2" == "rc=2"
         public void RerollCompoundModifier_Parse_ValidInput_ShouldSucceed(string input, ComparisonOperator expectedOp, int expectedValue)
         {
             var result = DiceParser.rerollCompoundModifier.Parse(input);
@@ -145,8 +157,8 @@ namespace DotDice.Tests
             Assert.That(modifier.Value, Is.EqualTo(expectedValue));
         }
 
-        [TestCase("rc5")]   // Missing operator
         [TestCase("rc>")]   // Missing value
+        [TestCase("rc")]    // Missing comparison entirely
         public void RerollCompoundModifier_Parse_InvalidInput_ShouldFail(string input)
         {
             var result = DiceParser.rerollCompoundModifier.Parse(input);
@@ -423,6 +435,86 @@ namespace DotDice.Tests
             var constMod = modifiers[5] as ConstantModifier;
             Assert.That(constMod?.Operator, Is.EqualTo(ArithmeticOperator.Subtract));
             Assert.That(constMod?.Value, Is.EqualTo(7));
+        }
+
+        #endregion
+
+        #region Shorthand Modifier Tests
+
+        // Bare "!" / "^" / "!!" resolve to the die's maximum face when the roll is built.
+        [TestCase("2d6!", typeof(ExplodeModifier), ComparisonOperator.Equal, 6)]
+        [TestCase("3d10!", typeof(ExplodeModifier), ComparisonOperator.Equal, 10)]
+        [TestCase("d%!", typeof(ExplodeModifier), ComparisonOperator.Equal, 100)]
+        [TestCase("4dF!", typeof(ExplodeModifier), ComparisonOperator.Equal, 1)]
+        [TestCase("2d6^", typeof(CompoundingModifier), ComparisonOperator.Equal, 6)]
+        [TestCase("2d6!!", typeof(CompoundingModifier), ComparisonOperator.Equal, 6)]
+        [TestCase("2d8!!", typeof(CompoundingModifier), ComparisonOperator.Equal, 8)]
+        [TestCase("3d6!6", typeof(ExplodeModifier), ComparisonOperator.Equal, 6)]
+        [TestCase("3d6!2", typeof(ExplodeModifier), ComparisonOperator.Equal, 2)]
+        [TestCase("4d6ro1", typeof(RerollOnceModifier), ComparisonOperator.Equal, 1)]
+        [TestCase("4d6rc2", typeof(RerollMultipleModifier), ComparisonOperator.Equal, 2)]
+        public void Roll_Parse_ShorthandModifiers_ResolveCorrectly(string input, Type expectedModifierType, ComparisonOperator expectedOp, int expectedValue)
+        {
+            var result = DiceParser.Roll.Parse(input);
+            Assert.IsTrue(result.Success, $"Roll parser should succeed for shorthand input '{input}'");
+
+            var roll = result.Value as BasicRoll;
+            Assert.NotNull(roll);
+
+            var modifiers = roll.Modifiers.ToList();
+            Assert.That(modifiers.Count, Is.EqualTo(1));
+            Assert.That(modifiers[0], Is.TypeOf(expectedModifierType));
+
+            var (op, value) = modifiers[0] switch
+            {
+                ExplodeModifier em => (em.Operator, em.Value),
+                CompoundingModifier cm => (cm.Operator, cm.Value),
+                RerollOnceModifier rom => (rom.Operator, rom.Value),
+                RerollMultipleModifier rmm => (rmm.Operator, rmm.Value),
+                _ => throw new InvalidOperationException("Unexpected modifier type")
+            };
+
+            Assert.That(op, Is.EqualTo(expectedOp));
+            Assert.That(value, Is.EqualTo(expectedValue), "Sentinel should be resolved to the die's max face");
+        }
+
+        [Test]
+        public void Roll_Parse_BareExplodeFollowedByArithmetic_ParsesAsArithmeticRoll()
+        {
+            // The bare-integer shorthand must not consume the "+3" term
+            var result = DiceParser.Roll.Parse("2d6!+3");
+            Assert.IsTrue(result.Success, "Roll parser should succeed for '2d6!+3'");
+
+            var arithmeticRoll = result.Value as ArithmeticRoll;
+            Assert.NotNull(arithmeticRoll, "'2d6!+3' should parse as an arithmetic roll");
+            Assert.That(arithmeticRoll.Terms.Count, Is.EqualTo(2));
+
+            var firstRoll = arithmeticRoll.Terms[0].Roll as BasicRoll;
+            Assert.NotNull(firstRoll);
+            var explode = firstRoll.Modifiers.Single() as ExplodeModifier;
+            Assert.NotNull(explode);
+            Assert.That(explode.Value, Is.EqualTo(6), "Bare '!' should explode on the max face, not consume '+3'");
+
+            var constant = arithmeticRoll.Terms[1].Roll as Constant;
+            Assert.NotNull(constant);
+            Assert.That(constant.Value, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void Roll_Parse_ShorthandWithOtherModifiers_ParsesCorrectly()
+        {
+            // Shorthand explode mixed with keep: "3d6!kh2"
+            var result = DiceParser.Roll.Parse("3d6!kh2");
+            Assert.IsTrue(result.Success);
+
+            var roll = result.Value as BasicRoll;
+            Assert.NotNull(roll);
+
+            var modifiers = roll.Modifiers.ToList();
+            Assert.That(modifiers.Count, Is.EqualTo(2));
+            Assert.IsTrue(modifiers[0] is ExplodeModifier);
+            Assert.IsTrue(modifiers[1] is KeepModifier);
+            Assert.That(((ExplodeModifier)modifiers[0]).Value, Is.EqualTo(6));
         }
 
         #endregion

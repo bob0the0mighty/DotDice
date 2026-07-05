@@ -20,10 +20,10 @@ namespace DotDice.Tests
             var result = "2d6".ParseRollDetailed(rng);
 
             // Assert
-            Assert.AreEqual(6, result.Value);
-            Assert.AreEqual(2, result.Events.Count);
-            Assert.AreEqual(4, result.Events[0].Value);
-            Assert.AreEqual(2, result.Events[1].Value);
+            Assert.That(result.Value, Is.EqualTo(6));
+            Assert.That(result.Events.Count, Is.EqualTo(2));
+            Assert.That(result.Events[0].Value, Is.EqualTo(4));
+            Assert.That(result.Events[1].Value, Is.EqualTo(2));
             Assert.IsTrue(result.Events.All(e => e.Type == DieEventType.Initial));
             Assert.IsTrue(result.Events.All(e => e.Status == DieStatus.Kept));
         }
@@ -38,20 +38,20 @@ namespace DotDice.Tests
             var result = "2d6ro<2".ParseRollDetailed(rng);
 
             // Assert
-            Assert.AreEqual(8, result.Value); // 3 + 5
-            Assert.AreEqual(3, result.Events.Count);
+            Assert.That(result.Value, Is.EqualTo(8)); // 3 + 5
+            Assert.That(result.Events.Count, Is.EqualTo(3));
             
             // Original 1 (discarded)
-            Assert.AreEqual(1, result.Events[0].Value);
-            Assert.AreEqual(DieStatus.Discarded, result.Events[0].Status);
+            Assert.That(result.Events[0].Value, Is.EqualTo(1));
+            Assert.That(result.Events[0].Status, Is.EqualTo(DieStatus.Discarded));
             
             // Original 5 (kept)
-            Assert.AreEqual(5, result.Events[1].Value);
-            Assert.AreEqual(DieStatus.Kept, result.Events[1].Status);
+            Assert.That(result.Events[1].Value, Is.EqualTo(5));
+            Assert.That(result.Events[1].Status, Is.EqualTo(DieStatus.Kept));
             
             // Reroll to 3
-            Assert.AreEqual(3, result.Events[2].Value);
-            Assert.AreEqual(DieEventType.Reroll, result.Events[2].Type);
+            Assert.That(result.Events[2].Value, Is.EqualTo(3));
+            Assert.That(result.Events[2].Type, Is.EqualTo(DieEventType.Reroll));
         }
 
         [Test]
@@ -64,21 +64,21 @@ namespace DotDice.Tests
             var result = "2d6!=6".ParseRollDetailed(rng);
 
             // Assert
-            Assert.AreEqual(13, result.Value); // 6 + 4 + 3
-            Assert.AreEqual(3, result.Events.Count);
+            Assert.That(result.Value, Is.EqualTo(13)); // 6 + 4 + 3
+            Assert.That(result.Events.Count, Is.EqualTo(3));
             
             // Original 6
-            Assert.AreEqual(6, result.Events[0].Value);
-            Assert.AreEqual(DieEventType.Initial, result.Events[0].Type);
-            Assert.AreEqual(RollSignificance.Maximum, result.Events[0].Significance);
+            Assert.That(result.Events[0].Value, Is.EqualTo(6));
+            Assert.That(result.Events[0].Type, Is.EqualTo(DieEventType.Initial));
+            Assert.That(result.Events[0].Significance, Is.EqualTo(RollSignificance.Maximum));
             
             // Original 4
-            Assert.AreEqual(4, result.Events[1].Value);
-            Assert.AreEqual(DieEventType.Initial, result.Events[1].Type);
+            Assert.That(result.Events[1].Value, Is.EqualTo(4));
+            Assert.That(result.Events[1].Type, Is.EqualTo(DieEventType.Initial));
             
             // Explosion from first die
-            Assert.AreEqual(3, result.Events[2].Value);
-            Assert.AreEqual(DieEventType.Explosion, result.Events[2].Type);
+            Assert.That(result.Events[2].Value, Is.EqualTo(3));
+            Assert.That(result.Events[2].Type, Is.EqualTo(DieEventType.Explosion));
         }
 
         [Test]
@@ -91,17 +91,17 @@ namespace DotDice.Tests
             var result = "3d6kh2".ParseRollDetailed(rng);
 
             // Assert
-            Assert.AreEqual(10, result.Value); // 6 + 4 (2 is dropped)
-            Assert.AreEqual(3, result.Events.Count);
+            Assert.That(result.Value, Is.EqualTo(10)); // 6 + 4 (2 is dropped)
+            Assert.That(result.Events.Count, Is.EqualTo(3));
             
             // Check that the lowest die (2) is dropped
             var droppedEvent = result.Events.FirstOrDefault(e => e.Value == 2);
             Assert.IsNotNull(droppedEvent);
-            Assert.AreEqual(DieStatus.Dropped, droppedEvent.Status);
+            Assert.That(droppedEvent.Status, Is.EqualTo(DieStatus.Dropped));
             
             // Check that the highest dice are kept
             var keptEvents = result.Events.Where(e => e.Status == DieStatus.Kept).ToList();
-            Assert.AreEqual(2, keptEvents.Count);
+            Assert.That(keptEvents.Count, Is.EqualTo(2));
             Assert.IsTrue(keptEvents.Any(e => e.Value == 6));
             Assert.IsTrue(keptEvents.Any(e => e.Value == 4));
         }
@@ -113,8 +113,8 @@ namespace DotDice.Tests
             var result = "5".ParseRollDetailed();
 
             // Assert
-            Assert.AreEqual(5, result.Value);
-            Assert.AreEqual(0, result.Events.Count);
+            Assert.That(result.Value, Is.EqualTo(5));
+            Assert.That(result.Events.Count, Is.EqualTo(0));
         }
 
         [Test]
@@ -127,16 +127,16 @@ namespace DotDice.Tests
             var result = "1d6+3".ParseRollDetailed(rng);
 
             // Assert
-            Assert.AreEqual(7, result.Value);
-            Assert.AreEqual(2, result.Events.Count);
+            Assert.That(result.Value, Is.EqualTo(7));
+            Assert.That(result.Events.Count, Is.EqualTo(2));
             
             // Dice roll
-            Assert.AreEqual(4, result.Events[0].Value);
-            Assert.AreEqual(DieEventType.Initial, result.Events[0].Type);
+            Assert.That(result.Events[0].Value, Is.EqualTo(4));
+            Assert.That(result.Events[0].Type, Is.EqualTo(DieEventType.Initial));
             
             // Constant
-            Assert.AreEqual(3, result.Events[1].Value);
-            Assert.AreEqual(DieEventType.Initial, result.Events[1].Type);
+            Assert.That(result.Events[1].Value, Is.EqualTo(3));
+            Assert.That(result.Events[1].Type, Is.EqualTo(DieEventType.Initial));
         }
 
         [Test]

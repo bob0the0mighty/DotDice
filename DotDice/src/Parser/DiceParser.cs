@@ -9,6 +9,13 @@ namespace DotDice.Parser
 
     public static class DiceParser
     {
+        /// <summary>
+        /// Sentinel value used by shorthand modifiers (bare "!", "!!", "^") to mean
+        /// "the maximum face of the die". It is replaced with the concrete face value
+        /// when the enclosing basic roll is constructed, so it never escapes a full parse.
+        /// </summary>
+        public const int MaxFaceSentinel = -1;
+
         static Parser<char, int> PositiveInt =
             DecimalNum.Where(x => x > 0);
 
@@ -35,6 +42,20 @@ namespace DotDice.Parser
                 )
             );
 
+        // Unsigned digits-only positive integer. Unlike DecimalNum this rejects a
+        // leading '+'/'-', so shorthand like "2d6!" followed by "+3" leaves the
+        // "+3" for the arithmetic-expression parser instead of consuming it.
+        static readonly Parser<char, int> UnsignedPositiveInt =
+            Digit.AtLeastOnceString()
+                .Select(s => int.TryParse(s, out var v) ? v : -1)
+                .Where(x => x > 0);
+
+        // Comparison point that also accepts a bare integer as shorthand for equality,
+        // so "ro1" means "ro=1" and "!6" means "!=6" (matching common VTT syntax).
+        public static readonly Parser<char, ComparisonPoint> comparisonPointOrBareValue =
+            comparisonPoint
+                .Or(Tok(UnsignedPositiveInt).Map(val => new ComparisonPoint(ComparisonOperator.Equal, val)));
+
         // Parser for success modifier
         public static readonly Parser<char, Modifier> successModifier =
             Tok(
@@ -51,42 +72,50 @@ namespace DotDice.Parser
                 )
             );
 
-        // Parser for explode modifier
+        // Parser for explode modifier.
+        // The comparison is optional: bare "!" explodes on the die's maximum face
+        // (resolved from MaxFaceSentinel when the enclosing roll is built), and a
+        // bare integer is shorthand for equality ("3d6!6" == "3d6!=6").
         public static readonly Parser<char, Modifier> explodeModifier =
             Tok(
                 Char('!').
                 Then(
-                    comparisonPoint,
-                    (_, cp) => (Modifier)new ExplodeModifier(cp.compOp, cp.value)
+                    comparisonPointOrBareValue.Optional(),
+                    (_, maybeCp) => maybeCp.HasValue
+                        ? (Modifier)new ExplodeModifier(maybeCp.Value.compOp, maybeCp.Value.value)
+                        : (Modifier)new ExplodeModifier(ComparisonOperator.Equal, MaxFaceSentinel)
                 )
             );
 
-        // Parser for compounding modifier
+        // Parser for compounding modifier ("^" or the common VTT alias "!!").
+        // The comparison is optional, with the same shorthand rules as explode.
         public static readonly Parser<char, Modifier> compoundingModifier =
             Tok(
-                Char('^').
+                Try(String("!!")).Or(Char('^').Map(c => c.ToString())).
                 Then(
-                    comparisonPoint,
-                    (_, cp) => (Modifier)new CompoundingModifier(cp.compOp, cp.value)
+                    comparisonPointOrBareValue.Optional(),
+                    (_, maybeCp) => maybeCp.HasValue
+                        ? (Modifier)new CompoundingModifier(maybeCp.Value.compOp, maybeCp.Value.value)
+                        : (Modifier)new CompoundingModifier(ComparisonOperator.Equal, MaxFaceSentinel)
                 )
             );
 
-        // Parser for reroll modifier
+        // Parser for reroll modifier ("ro=1" or the shorthand "ro1")
         public static readonly Parser<char, Modifier> rerollOnceModifier =
             Tok(
                 String("ro")
                 .Then(
-                    comparisonPoint,
+                    comparisonPointOrBareValue,
                     (_, cp) => (Modifier)new RerollOnceModifier(cp.compOp, cp.value)
                 )
             );
 
-        // Parser for reroll modifier
+        // Parser for reroll modifier ("rc<2" or the shorthand "rc1")
         public static readonly Parser<char, Modifier> rerollCompoundModifier =
             Tok(
                 String("rc")
                 .Then(
-                    comparisonPoint,
+                    comparisonPointOrBareValue,
                     (_, cp) => (Modifier)new RerollMultipleModifier(cp.compOp, cp.value)
                 )
             );
@@ -161,7 +190,9 @@ namespace DotDice.Parser
                 )
             );
 
-        // Parser for a single modifier
+        // Parser for a single modifier.
+        // Note: compoundingModifier must be tried before explodeModifier so "!!" is
+        // recognised as a compound rather than two bare explodes.
         public static readonly Parser<char, Modifier> Modifier =
             successModifier
                 .Or(failureModifier)
@@ -171,8 +202,8 @@ namespace DotDice.Parser
                 .Or(keepLowModifier)
                 .Or(rerollOnceModifier)
                 .Or(rerollCompoundModifier)
-                .Or(explodeModifier)
                 .Or(compoundingModifier)
+                .Or(explodeModifier)
                 .Or(constantModifier);
 
         // Parser for multiple modifiers
@@ -196,6 +227,30 @@ namespace DotDice.Parser
                     .Map(val => (DieType)new DieType.Basic(val)))
             );
 
+        /// <summary>
+        /// Replaces MaxFaceSentinel placeholders (from bare "!", "!!", "^") with the
+        /// concrete maximum face value of the die being rolled.
+        /// </summary>
+        private static IEnumerable<Modifier> ResolveMaxFaceSentinels(IEnumerable<Modifier> modifiers, DieType die)
+        {
+            int maxFace = die switch
+            {
+                DieType.Basic basic => basic.sides,
+                DieType.Percent => 100,
+                DieType.Fudge => 1,
+                _ => MaxFaceSentinel
+            };
+
+            return modifiers
+                .Select<Modifier, Modifier>(m => m switch
+                {
+                    ExplodeModifier { Value: MaxFaceSentinel } => new ExplodeModifier(ComparisonOperator.Equal, maxFace),
+                    CompoundingModifier { Value: MaxFaceSentinel } => new CompoundingModifier(ComparisonOperator.Equal, maxFace),
+                    _ => m
+                })
+                .ToList();
+        }
+
         // Parser for a basic roll
         public static readonly Parser<char, Roll> basicRoll =
             Tok(
@@ -204,7 +259,7 @@ namespace DotDice.Parser
                         (Roll)new BasicRoll(
                             maybeNum.HasValue ? maybeNum.Value : 1,
                             die,
-                            mod
+                            ResolveMaxFaceSentinels(mod, die)
                         )
                     ,
                     PositiveInt.Optional(),
@@ -224,7 +279,8 @@ namespace DotDice.Parser
                     .ThenReturn(ArithmeticOperator.Subtract))
             );
 
-        // Parser for a single modifier (excluding constant modifiers for arithmetic expressions)
+        // Parser for a single modifier (excluding constant modifiers for arithmetic expressions).
+        // compoundingModifier before explodeModifier, as above.
         public static readonly Parser<char, Modifier> ModifierExcludingConstant =
             successModifier
                 .Or(failureModifier)
@@ -234,8 +290,8 @@ namespace DotDice.Parser
                 .Or(keepLowModifier)
                 .Or(rerollOnceModifier)
                 .Or(rerollCompoundModifier)
-                .Or(explodeModifier)
-                .Or(compoundingModifier);
+                .Or(compoundingModifier)
+                .Or(explodeModifier);
 
         // Parser for multiple modifiers (excluding constant modifiers)
         public static readonly Parser<char, IEnumerable<Modifier>> ModifiersExcludingConstant = ModifierExcludingConstant.Many();
@@ -248,7 +304,7 @@ namespace DotDice.Parser
                         (Roll)new BasicRoll(
                             maybeNum.HasValue ? maybeNum.Value : 1,
                             die,
-                            mod
+                            ResolveMaxFaceSentinels(mod, die)
                         )
                     ,
                     PositiveInt.Optional(),

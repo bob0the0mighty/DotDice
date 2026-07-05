@@ -19,18 +19,18 @@ namespace DotDice.Tests
             var result = evaluator.EvaluateDetailed(basicRoll);
 
             // Assert
-            Assert.AreEqual(8, result.Value);
-            Assert.AreEqual(2, result.Events.Count);
+            Assert.That(result.Value, Is.EqualTo(8));
+            Assert.That(result.Events.Count, Is.EqualTo(2));
             
-            Assert.AreEqual(3, result.Events[0].Value);
-            Assert.AreEqual(DieEventType.Initial, result.Events[0].Type);
-            Assert.AreEqual(DieStatus.Kept, result.Events[0].Status);
-            Assert.AreEqual(RollSignificance.None, result.Events[0].Significance);
+            Assert.That(result.Events[0].Value, Is.EqualTo(3));
+            Assert.That(result.Events[0].Type, Is.EqualTo(DieEventType.Initial));
+            Assert.That(result.Events[0].Status, Is.EqualTo(DieStatus.Kept));
+            Assert.That(result.Events[0].Significance, Is.EqualTo(RollSignificance.None));
             
-            Assert.AreEqual(5, result.Events[1].Value);
-            Assert.AreEqual(DieEventType.Initial, result.Events[1].Type);
-            Assert.AreEqual(DieStatus.Kept, result.Events[1].Status);
-            Assert.AreEqual(RollSignificance.None, result.Events[1].Significance);
+            Assert.That(result.Events[1].Value, Is.EqualTo(5));
+            Assert.That(result.Events[1].Type, Is.EqualTo(DieEventType.Initial));
+            Assert.That(result.Events[1].Status, Is.EqualTo(DieStatus.Kept));
+            Assert.That(result.Events[1].Significance, Is.EqualTo(RollSignificance.None));
         }
 
         [Test]
@@ -44,14 +44,14 @@ namespace DotDice.Tests
             var result = evaluator.EvaluateDetailed(basicRoll);
 
             // Assert
-            Assert.AreEqual(7, result.Value);
-            Assert.AreEqual(2, result.Events.Count);
+            Assert.That(result.Value, Is.EqualTo(7));
+            Assert.That(result.Events.Count, Is.EqualTo(2));
             
-            Assert.AreEqual(1, result.Events[0].Value);
-            Assert.AreEqual(RollSignificance.Minimum, result.Events[0].Significance);
+            Assert.That(result.Events[0].Value, Is.EqualTo(1));
+            Assert.That(result.Events[0].Significance, Is.EqualTo(RollSignificance.Minimum));
             
-            Assert.AreEqual(6, result.Events[1].Value);
-            Assert.AreEqual(RollSignificance.Maximum, result.Events[1].Significance);
+            Assert.That(result.Events[1].Value, Is.EqualTo(6));
+            Assert.That(result.Events[1].Significance, Is.EqualTo(RollSignificance.Maximum));
         }
 
         [Test]
@@ -66,17 +66,17 @@ namespace DotDice.Tests
             var result = evaluator.EvaluateDetailed(basicRoll);
 
             // Assert
-            Assert.AreEqual(10, result.Value); // 4 + 6
-            Assert.AreEqual(3, result.Events.Count);
+            Assert.That(result.Value, Is.EqualTo(10)); // 4 + 6
+            Assert.That(result.Events.Count, Is.EqualTo(3));
             
             // The lowest die (2) should be dropped
             var droppedEvent = result.Events.FirstOrDefault(e => e.Value == 2);
             Assert.IsNotNull(droppedEvent);
-            Assert.AreEqual(DieStatus.Dropped, droppedEvent.Status);
+            Assert.That(droppedEvent.Status, Is.EqualTo(DieStatus.Dropped));
             
             // The highest dice (4, 6) should be kept
             var keptEvents = result.Events.Where(e => e.Status == DieStatus.Kept).ToList();
-            Assert.AreEqual(2, keptEvents.Count);
+            Assert.That(keptEvents.Count, Is.EqualTo(2));
             Assert.IsTrue(keptEvents.Any(e => e.Value == 4));
             Assert.IsTrue(keptEvents.Any(e => e.Value == 6));
         }
@@ -93,23 +93,23 @@ namespace DotDice.Tests
             var result = evaluator.EvaluateDetailed(basicRoll);
 
             // Assert
-            Assert.AreEqual(7, result.Value); // 4 + 3
-            Assert.AreEqual(3, result.Events.Count);
+            Assert.That(result.Value, Is.EqualTo(7)); // 4 + 3
+            Assert.That(result.Events.Count, Is.EqualTo(3));
             
             // First event should be the original 1, now discarded
-            Assert.AreEqual(1, result.Events[0].Value);
-            Assert.AreEqual(DieEventType.Initial, result.Events[0].Type);
-            Assert.AreEqual(DieStatus.Discarded, result.Events[0].Status);
+            Assert.That(result.Events[0].Value, Is.EqualTo(1));
+            Assert.That(result.Events[0].Type, Is.EqualTo(DieEventType.Initial));
+            Assert.That(result.Events[0].Status, Is.EqualTo(DieStatus.Discarded));
             
             // Second event should be the 3, kept
-            Assert.AreEqual(3, result.Events[1].Value);
-            Assert.AreEqual(DieEventType.Initial, result.Events[1].Type);
-            Assert.AreEqual(DieStatus.Kept, result.Events[1].Status);
+            Assert.That(result.Events[1].Value, Is.EqualTo(3));
+            Assert.That(result.Events[1].Type, Is.EqualTo(DieEventType.Initial));
+            Assert.That(result.Events[1].Status, Is.EqualTo(DieStatus.Kept));
             
             // Third event should be the reroll to 4
-            Assert.AreEqual(4, result.Events[2].Value);
-            Assert.AreEqual(DieEventType.Reroll, result.Events[2].Type);
-            Assert.AreEqual(DieStatus.Kept, result.Events[2].Status);
+            Assert.That(result.Events[2].Value, Is.EqualTo(4));
+            Assert.That(result.Events[2].Type, Is.EqualTo(DieEventType.Reroll));
+            Assert.That(result.Events[2].Status, Is.EqualTo(DieStatus.Kept));
         }
 
         [Test]
@@ -124,23 +124,23 @@ namespace DotDice.Tests
             var result = evaluator.EvaluateDetailed(basicRoll);
 
             // Assert
-            Assert.AreEqual(14, result.Value); // 6 + 3 + 5
-            Assert.AreEqual(3, result.Events.Count);
+            Assert.That(result.Value, Is.EqualTo(14)); // 6 + 3 + 5
+            Assert.That(result.Events.Count, Is.EqualTo(3));
             
             // First event: original 6
-            Assert.AreEqual(6, result.Events[0].Value);
-            Assert.AreEqual(DieEventType.Initial, result.Events[0].Type);
-            Assert.AreEqual(DieStatus.Kept, result.Events[0].Status);
+            Assert.That(result.Events[0].Value, Is.EqualTo(6));
+            Assert.That(result.Events[0].Type, Is.EqualTo(DieEventType.Initial));
+            Assert.That(result.Events[0].Status, Is.EqualTo(DieStatus.Kept));
             
             // Second event: original 3
-            Assert.AreEqual(3, result.Events[1].Value);
-            Assert.AreEqual(DieEventType.Initial, result.Events[1].Type);
-            Assert.AreEqual(DieStatus.Kept, result.Events[1].Status);
+            Assert.That(result.Events[1].Value, Is.EqualTo(3));
+            Assert.That(result.Events[1].Type, Is.EqualTo(DieEventType.Initial));
+            Assert.That(result.Events[1].Status, Is.EqualTo(DieStatus.Kept));
             
             // Third event: explosion from the 6
-            Assert.AreEqual(5, result.Events[2].Value);
-            Assert.AreEqual(DieEventType.Explosion, result.Events[2].Type);
-            Assert.AreEqual(DieStatus.Kept, result.Events[2].Status);
+            Assert.That(result.Events[2].Value, Is.EqualTo(5));
+            Assert.That(result.Events[2].Type, Is.EqualTo(DieEventType.Explosion));
+            Assert.That(result.Events[2].Status, Is.EqualTo(DieStatus.Kept));
         }
 
         [Test]
@@ -154,8 +154,8 @@ namespace DotDice.Tests
             var result = evaluator.EvaluateDetailed(constant);
 
             // Assert
-            Assert.AreEqual(5, result.Value);
-            Assert.AreEqual(0, result.Events.Count);
+            Assert.That(result.Value, Is.EqualTo(5));
+            Assert.That(result.Events.Count, Is.EqualTo(0));
         }
 
         [Test]
@@ -170,17 +170,17 @@ namespace DotDice.Tests
             var result = evaluator.EvaluateDetailed(basicRoll);
 
             // Assert
-            Assert.AreEqual(7, result.Value); // 4 + 3
-            Assert.AreEqual(2, result.Events.Count);
+            Assert.That(result.Value, Is.EqualTo(7)); // 4 + 3
+            Assert.That(result.Events.Count, Is.EqualTo(2));
             
             // First event: the die roll
-            Assert.AreEqual(4, result.Events[0].Value);
-            Assert.AreEqual(DieEventType.Initial, result.Events[0].Type);
+            Assert.That(result.Events[0].Value, Is.EqualTo(4));
+            Assert.That(result.Events[0].Type, Is.EqualTo(DieEventType.Initial));
             
             // Second event: the constant
-            Assert.AreEqual(3, result.Events[1].Value);
-            Assert.AreEqual(DieEventType.Initial, result.Events[1].Type);
-            Assert.AreEqual(DieStatus.Kept, result.Events[1].Status);
+            Assert.That(result.Events[1].Value, Is.EqualTo(3));
+            Assert.That(result.Events[1].Type, Is.EqualTo(DieEventType.Initial));
+            Assert.That(result.Events[1].Status, Is.EqualTo(DieStatus.Kept));
         }
     }
 }
