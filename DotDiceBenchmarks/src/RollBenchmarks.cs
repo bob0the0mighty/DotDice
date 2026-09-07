@@ -16,7 +16,13 @@ namespace DotDiceBenchmarks;
 /// once and reuse an evaluator. These measure both, plus the parse alone, so the
 /// split between parsing and evaluating is visible rather than inferred.
 ///
-/// Run with: dotnet run -c Release --project DotDiceBenchmarks
+/// Both evaluation paths appear separately. <see cref="DiceEvaluator.Evaluate"/>
+/// is currently a projection of <see cref="DiceEvaluator.EvaluateDetailed"/>, so
+/// they cost the same today; measuring them side by side is what makes it visible
+/// when that stops being true.
+///
+/// Run with: dotnet run -c Release --project DotDiceBenchmarks -- --filter '*RollBenchmarks*'
+/// Add --job short for a quick look; omit it for numbers worth recording.
 /// </summary>
 [MemoryDiagnoser]
 public class RollBenchmarks
@@ -52,7 +58,7 @@ public class RollBenchmarks
     /// System.Random, evaluate. What a naive per-iteration loop costs.
     /// </summary>
     [Benchmark(Baseline = true)]
-    public int ParseAndEvaluate() => Expression.ParseRollDetailed().Value;
+    public int ParseAndEvaluate() => Expression.ParseRoll();
 
     /// <summary>
     /// Evaluation only, against a Roll parsed once and an evaluator reused. The
@@ -61,6 +67,14 @@ public class RollBenchmarks
     /// </summary>
     [Benchmark]
     public int EvaluatePreParsed() => _evaluator.Evaluate(_parsedRoll);
+
+    /// <summary>
+    /// The same, asking for per-die events. A consumer that renders the dice pays
+    /// this; one that only wants a total does not, and the gap between this and
+    /// <see cref="EvaluatePreParsed"/> is what that choice is worth.
+    /// </summary>
+    [Benchmark]
+    public int EvaluatePreParsedDetailed() => _evaluator.EvaluateDetailed(_parsedRoll).Value;
 }
 
 public static class Program
