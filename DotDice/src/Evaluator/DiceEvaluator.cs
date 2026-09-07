@@ -100,17 +100,25 @@ namespace DotDice.Evaluator
         private DiceEvaluationResult EvaluateBasicRollDetailed(BasicRoll basicRoll, int? groupId = null, ArithmeticOperator? groupOperator = null)
         {
             // Generation Phase: Create initial events
-            var events = Enumerable.Range(0, basicRoll.NumberOfDice)
-                .Select(_ => RollDieEvent(basicRoll.DieType, DieEventType.Initial, groupId, groupOperator))
-                .ToList();
+            var events = new List<DieEvent>(basicRoll.NumberOfDice);
+            for (int i = 0; i < basicRoll.NumberOfDice; i++)
+            {
+                events.Add(RollDieEvent(basicRoll.DieType, DieEventType.Initial, groupId, groupOperator));
+            }
 
             // Apply modifiers in the proper order
             events = ApplyModifiersDetailed(events, basicRoll.Modifiers, basicRoll.DieType);
 
             // Calculate final value from events that are not dropped or discarded
-            var finalValue = events
-                .Where(e => e.Status != DieStatus.Dropped && e.Status != DieStatus.Discarded)
-                .Sum(e => e.Value);
+            int finalValue = 0;
+            for (int i = 0; i < events.Count; i++)
+            {
+                var evt = events[i];
+                if (evt.Status != DieStatus.Dropped && evt.Status != DieStatus.Discarded)
+                {
+                    finalValue += evt.Value;
+                }
+            }
 
             return new DiceEvaluationResult(finalValue, events);
         }
@@ -145,7 +153,7 @@ namespace DotDice.Evaluator
                     case ArithmeticOperator.Add:
                         result += rollResult.Value;
                         // For constants (like +3), create an event if there are no events
-                        if (!rollResult.Events.Any() && roll is Constant constantRoll)
+                        if (rollResult.Events.Count == 0 && roll is Constant constantRoll)
                         {
                             allEvents.Add(new DieEvent
                             {
@@ -162,7 +170,7 @@ namespace DotDice.Evaluator
                     case ArithmeticOperator.Subtract:
                         result -= rollResult.Value;
                         // For constants (like -3), create an event if there are no events
-                        if (!rollResult.Events.Any() && roll is Constant constantRoll2)
+                        if (rollResult.Events.Count == 0 && roll is Constant constantRoll2)
                         {
                             allEvents.Add(new DieEvent
                             {
@@ -181,10 +189,14 @@ namespace DotDice.Evaluator
                 }
 
                 // For non-BasicRoll events (like constants from other sources), assign group info if missing
-                var eventsToAdd = rollResult.Events.Select(e =>
-                    e.GroupId.HasValue ? e : e with { GroupId = groupId, GroupOperator = operation }).ToList();
-
-                allEvents.AddRange(eventsToAdd);
+                var termEvents = rollResult.Events;
+                for (int i = 0; i < termEvents.Count; i++)
+                {
+                    var evt = termEvents[i];
+                    allEvents.Add(evt.GroupId.HasValue
+                        ? evt
+                        : evt with { GroupId = groupId, GroupOperator = operation });
+                }
                 groupId++; // Increment group ID for next term
             }
 
@@ -235,11 +247,16 @@ namespace DotDice.Evaluator
 
         private List<DieEvent> ApplyModifiersDetailed(List<DieEvent> events, IEnumerable<Modifier> modifiers, DieType originalDieType)
         {
+            // The modifier list is walked four times below. Materialising it once and
+            // indexing avoids an enumerator allocation per walk, which is per-evaluation
+            // cost that does not scale with dice count and so dominates small rolls.
+            var modifierList = modifiers as IReadOnlyList<Modifier> ?? modifiers.ToList();
+
             // Phase 1: Generation Phase - Creates Events
             // Handle Initial rolls (already done), Reroll, then Explosion/Compound
-            foreach (var modifier in modifiers)
+            for (int m = 0; m < modifierList.Count; m++)
             {
-                switch (modifier)
+                switch (modifierList[m])
                 {
                     case RerollOnceModifier rerollOnceModifier:
                         events = ApplyRerollOnceModifierDetailed(events, rerollOnceModifier, originalDieType);
@@ -258,9 +275,9 @@ namespace DotDice.Evaluator
 
             // Phase 2: Modification Phase - Updates Events
             // Handle Keep/Drop modifiers by updating the Status property
-            foreach (var modifier in modifiers)
+            for (int m = 0; m < modifierList.Count; m++)
             {
-                switch (modifier)
+                switch (modifierList[m])
                 {
                     case KeepModifier keepModifier:
                         ApplyKeepModifierDetailed(events, keepModifier);
@@ -274,17 +291,28 @@ namespace DotDice.Evaluator
             // Phase 3: Finalization Phase - Reads Events
             // Success and failure counting are applied together against the same dice,
             // so expressions like "6d10>8f<2" produce (successes - failures).
-            var successModifier = modifiers.OfType<SuccessModifier>().FirstOrDefault();
-            var failureModifier = modifiers.OfType<FailureModifier>().FirstOrDefault();
+            SuccessModifier? successModifier = null;
+            FailureModifier? failureModifier = null;
+            for (int m = 0; m < modifierList.Count; m++)
+            {
+                if (successModifier == null && modifierList[m] is SuccessModifier success)
+                {
+                    successModifier = success;
+                }
+                else if (failureModifier == null && modifierList[m] is FailureModifier failure)
+                {
+                    failureModifier = failure;
+                }
+            }
 
             if (successModifier != null || failureModifier != null)
             {
                 events = ApplySuccessFailureModifiersDetailed(events, successModifier, failureModifier);
             }
 
-            foreach (var modifier in modifiers)
+            for (int m = 0; m < modifierList.Count; m++)
             {
-                if (modifier is ConstantModifier constantModifier)
+                if (modifierList[m] is ConstantModifier constantModifier)
                 {
                     events = ApplyConstantModifierDetailed(events, constantModifier);
                 }
@@ -308,9 +336,13 @@ namespace DotDice.Evaluator
 
         private List<DieEvent> ApplyRerollOnceModifierDetailed(List<DieEvent> events, RerollOnceModifier rerollOnceModifier, DieType originalDieType)
         {
-            var result = new List<DieEvent>(events);
+            // Appending straight into `events` rather than a copy. The bound is taken
+            // before the loop because this modifier rerolls each die at most once: a
+            // reroll must not itself be rerolled, or "ro" would mean "rc". Reading the
+            // count from a separate list is what used to enforce that.
+            int originalCount = events.Count;
 
-            for (int i = 0; i < events.Count; i++)
+            for (int i = 0; i < originalCount; i++)
             {
                 var evt = events[i];
 
@@ -329,18 +361,23 @@ namespace DotDice.Evaluator
 
                     // Create a reroll event (preserve group information from original event)
                     var rerollEvent = RollDieEvent(originalDieType, DieEventType.Reroll, evt.GroupId, evt.GroupOperator);
-                    result.Add(rerollEvent);
+                    events.Add(rerollEvent);
                 }
             }
 
-            return result;
+            return events;
         }
 
         private List<DieEvent> ApplyRerollUntilModifierDetailed(List<DieEvent> events, RerollMultipleModifier rerollUntilModifier, DieType originalDieType)
         {
-            var result = new List<DieEvent>(events);
+            // Appending straight into `events` rather than a copy. Rerolls do chain, in
+            // the inner loop below, which keeps rerolling until the condition fails or
+            // MaxRerolls is hit. The bound is taken before the outer loop so a reroll
+            // the inner loop already carried to its conclusion is not picked up again
+            // and rerolled a second time.
+            int originalCount = events.Count;
 
-            for (int i = 0; i < events.Count; i++)
+            for (int i = 0; i < originalCount; i++)
             {
                 var evt = events[i];
 
@@ -362,19 +399,24 @@ namespace DotDice.Evaluator
 
                     // Create a reroll event (preserve group information from original event)
                     currentEvent = RollDieEvent(originalDieType, DieEventType.Reroll, evt.GroupId, evt.GroupOperator);
-                    result.Add(currentEvent);
+                    events.Add(currentEvent);
                 }
             }
 
-            return result;
+            return events;
         }
 
         private List<DieEvent> ApplyExplodeModifierDetailed(List<DieEvent> events, ExplodeModifier explodeModifier, DieType originalDieType)
         {
-            var result = new List<DieEvent>(events);
+            // Appending straight into `events` rather than a copy. Explosions do explode
+            // on their own explosions, in the inner loop below: currentEvent is
+            // reassigned to each new roll and re-tested, so a maximum face keeps
+            // chaining until it stops rolling maximum or MaxExplosions is hit. The
+            // bound is taken before the outer loop so an explosion the inner loop
+            // already chained from is not visited again and exploded twice.
+            int originalCount = events.Count;
 
-            // Process each original event for explosions
-            for (int i = 0; i < events.Count; i++)
+            for (int i = 0; i < originalCount; i++)
             {
                 var evt = events[i];
 
@@ -393,13 +435,13 @@ namespace DotDice.Evaluator
                 {
                     // Create explosion event (preserve group information from original event)
                     currentEvent = RollDieEvent(originalDieType, DieEventType.Explosion, evt.GroupId, evt.GroupOperator);
-                    result.Add(currentEvent);
+                    events.Add(currentEvent);
 
                     explosionCounter++;
                 }
             }
 
-            return result;
+            return events;
         }
 
         private List<DieEvent> ApplyCompoundingModifierDetailed(List<DieEvent> events, CompoundingModifier compoundingModifier, DieType originalDieType)
@@ -612,7 +654,8 @@ namespace DotDice.Evaluator
                 Success = SuccessStatus.Neutral
             };
 
-            return events.Append(constantEvent).ToList();
+            events.Add(constantEvent);
+            return events;
         }
 
         private static bool ShouldProcessEvent(DieEvent evt)
