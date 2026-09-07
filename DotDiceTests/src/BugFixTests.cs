@@ -113,7 +113,8 @@ namespace DotDice.Tests
             var result = "5d10>7f=1".ParseRollDetailed(rng);
 
             Assert.That(result.Value, Is.EqualTo(2), "3 successes - 1 failure should be 2");
-            Assert.That(result.Events.Count, Is.EqualTo(1), "Success/failure counting returns a single count event");
+            Assert.That(result.Events.Count, Is.EqualTo(6), "The 5 counted dice, then the count event");
+            Assert.That(result.Events[^1].Value, Is.EqualTo(2));
         }
 
         [Test]
