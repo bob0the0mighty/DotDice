@@ -89,14 +89,36 @@ Console.WriteLine("Individual Events:");
 foreach (var evt in detailedResult.Events)
 {
     Console.WriteLine($"  Die: {evt.DieType}, Value: {evt.Value}, Status: {evt.Status}");
-    // evt.Type shows if it was Initial, Reroll, Explode, etc.
-    // evt.Significance shows if it was a critical hit, minimum roll, etc.
+    // evt.Type is the DieEventType: Initial, Reroll, Explosion, or Compound.
+    // Note: rerolled and exploded dice keep their original DieType (e.g. Basic);
+    // use evt.Type, not evt.DieType, to tell how an event was generated.
+    // evt.DieType is always Basic, Percent or Fudge, and null for a synthetic event
+    // such as a success count or a constant modifier.
+    // evt.Significance shows if it was a maximum or minimum roll.
+    // evt.Status shows if the die was Kept, Dropped (keep/drop), or Discarded (reroll,
+    // compound, or counted by a success/failure modifier).
 }
+```
+
+Success and failure counting appends a count event and marks the dice it counted as
+`Discarded`, so they no longer add their face value to the total but are still there to
+render. Each counted die carries `evt.Success`, which is `Success`, `Failure` or
+`Neutral`:
+
+```csharp
+var wod = "6d10>8f<2".ParseRollDetailed();
+
+foreach (var evt in wod.Events.Where(e => e.DieType != null))
+{
+    Console.WriteLine($"  {evt.Value}: {evt.Success}");
+}
+
+Console.WriteLine($"Net successes: {wod.Value}");
 ```
 
 #### Arithmetic Expression Grouping
 
-For complex arithmetic expressions like "3d20-4d4+5", the detailed results now include structural information about which dice belonged to which group and what operations separated them:
+For complex arithmetic expressions like "3d20-4d4+5", the detailed results include structural information about which dice belonged to which group and what operations separated them:
 
 ```csharp
 var result = "3d20kh1-4d4+5".ParseRollDetailed();
@@ -215,6 +237,20 @@ int wodSuccesses = evaluator.Evaluate(wodRoll);
 Console.WriteLine($"World of Darkness: {wodSuccesses} successes");
 ```
 
+### Evaluator Settings
+
+Rerolls, explosions, and compounds are capped to prevent infinite loops. The caps are configurable per evaluator (each must be at least 1):
+
+```csharp
+var evaluator = new DiceEvaluator();
+evaluator.MaxExplosions = 50;  // default 100, per die
+evaluator.MaxCompounds = 50;   // default 100, per die
+evaluator.MaxRerolls = 5;      // default 10, per die (rc only; ro always rerolls once)
+
+// A seed can be supplied for reproducible rolls
+var seeded = new DiceEvaluator(42);
+```
+
 ### Advanced Multi-Roll Scenarios
 
 More complex game systems may require multiple rolls that interact with each other. You can use the results of multiple evaluations:
@@ -248,23 +284,25 @@ DotDice supports a comprehensive dice notation syntax:
 - Complex expressions: `3d20+5d6-1d4+1`
 
 ### Modifiers
-- `kh#` - Keep highest # dice
-- `kl#` - Keep lowest # dice
-- `dh#` - Drop highest # dice
-- `dl#` - Drop lowest # dice
-- `r<#`, `r>#`, `r=#` - Reroll once if less than, greater than, or equal to #
-- `rr<#`, `rr>#`, `rr=#` - Reroll multiple times until condition is no longer met
-- `!=#`, `!>#`, `!<#` - Explode if condition is met
-- `^=#`, `^>#`, `^<#` - Compound if condition is met
+- `kh#` / `kh` - Keep highest # dice (defaults to 1)
+- `kl#` / `kl` - Keep lowest # dice (defaults to 1)
+- `dh#` / `dh` - Drop highest # dice (defaults to 1)
+- `dl#` / `dl` - Drop lowest # dice (defaults to 1)
+- `ro<#`, `ro>#`, `ro=#`, `ro#` - Reroll once if less than, greater than, or equal to # (`ro#` is shorthand for `ro=#`)
+- `rc<#`, `rc>#`, `rc=#`, `rc#` - Reroll repeatedly until the condition is no longer met (capped by `MaxRerolls`, default 10)
+- `!=#`, `!>#`, `!<#`, `!#`, `!` - Explode if condition is met; bare `!` explodes on the die's maximum face
+- `^=#`, `^>#`, `^<#`, `^#`, `^` (alias `!!`) - Compound if condition is met; bare `^`/`!!` compounds on the maximum face
 - `+#`, `-#` - Add or subtract a constant value
-- `cs>#`, `cs<#`, `cs=#` - Count successes (greater than, less than, or equal to #)
-- `cf>#`, `cf<#`, `cf=#` - Count failures (greater than, less than, or equal to #)
+- `>#`, `<#`, `=#` - Count successes (greater than, less than, or equal to #)
+- `f>#`, `f<#`, `f=#` - Count failures; combined with a success modifier the result is successes minus failures
 
 ### Examples
 - `4d6kh3` - Roll 4d6, keep highest 3 (D&D ability scores)
 - `2d20kh1` - Roll 2d20, keep highest (D&D advantage)
-- `1d6!=6` - Roll 1d6, explode on 6 (Savage Worlds)
+- `1d6!` - Roll 1d6, explode on 6 (Savage Worlds)
+- `4d6ro1` - Roll 4d6, reroll 1s once
 - `5d6>4` - Roll 5d6, count successes of 5+ (Shadowrun)
+- `6d10>8f<2` - Roll 6d10, successes on 9+ minus botches on 1s (World of Darkness)
 - `3d6+2d4-1` - Roll 3d6 plus 2d4 minus 1
 
 ## Contributing
