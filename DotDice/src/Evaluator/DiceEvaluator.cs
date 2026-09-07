@@ -318,6 +318,10 @@ namespace DotDice.Evaluator
             return new DiceEvaluationResult(result, allEvents);
         }
 
+        // DieType.Reroll is deprecated because the evaluator never produces one, but the
+        // record is public and a caller can still hand us a BasicRoll built from it. These
+        // two methods keep honouring it until 2.0 removes the record.
+#pragma warning disable CS0618
         private DieSlot RollDieSlot(DieType dieType, DieEventType eventType)
         {
             var value = dieType switch
@@ -355,6 +359,7 @@ namespace DotDice.Evaluator
                 _ => RollSignificance.None
             };
         }
+#pragma warning restore CS0618
 
         private void ApplyModifiers(ref SlotList slots, IEnumerable<Modifier> modifiers, DieType originalDieType)
         {
@@ -675,10 +680,15 @@ namespace DotDice.Evaluator
         /// Applies success and/or failure counting against the same set of active dice.
         /// Each active die is compared against the success criteria first, then the failure
         /// criteria (a die can only count once; success takes precedence when criteria overlap).
-        /// Replaces the slots with a single count slot whose value is (successes - failures), so:
+        /// Appends a single count slot whose value is (successes - failures), so:
         ///   success-only  => successCount
         ///   failure-only  => -failureCount
         ///   both          => successCount - failureCount (e.g. World of Darkness botch rules)
+        ///
+        /// The counted dice stay in the list, marked Discarded so they no longer contribute
+        /// to the total, the way compounding keeps its intermediate rolls. Each carries the
+        /// Success or Failure status it earned, so a caller reading EvaluateDetailed can
+        /// render which dice succeeded rather than only how many did.
         /// </summary>
         private void ApplySuccessFailureModifiers(ref SlotList slots, SuccessModifier? successModifier, FailureModifier? failureModifier)
         {
@@ -704,9 +714,14 @@ namespace DotDice.Evaluator
                     slot.Success = SuccessStatus.Failure;
                     failureCount++;
                 }
+
+                // The count slot below carries the value from here on, so the dice that
+                // produced it stop contributing to the total. Dice already dropped by a
+                // keep/drop modifier keep that status, which is what a renderer needs to
+                // tell "not counted" from "not rolled with".
+                slot.Status = DieStatus.Discarded;
             }
 
-            slots.Clear();
             slots.Add(new DieSlot
             {
                 Value = successCount - failureCount,

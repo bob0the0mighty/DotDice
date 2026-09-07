@@ -744,7 +744,11 @@ namespace DotDice.Tests
                     var evaluator = new DiceEvaluator();
                     // Creating a non-standard die type by reflection or mock would go here
                     // For this test, we'll leverage UnknownRoll with the right casting
-                    var dieType = new DieType.Constant(); // This is not handled in RollDie
+                    // Deprecated and never produced by the evaluator, which is exactly why
+                    // it is a convenient stand-in for a die type RollDie cannot handle.
+#pragma warning disable CS0618
+                    var dieType = new DieType.Constant();
+#pragma warning restore CS0618
                     var basicRoll = new BasicRoll(1, dieType, new List<Modifier>());
                     evaluator.Evaluate(basicRoll);
                 }), 
