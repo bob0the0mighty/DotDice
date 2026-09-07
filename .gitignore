@@ -289,3 +289,5 @@ __pycache__/
 *.xsd.cs
 # BenchmarkDotNet run output
 BenchmarkDotNet.Artifacts/
+
+.claude/

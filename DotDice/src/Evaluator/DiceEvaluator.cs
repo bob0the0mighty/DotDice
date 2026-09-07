@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.ComponentModel;
 using DotDice.Parser;
 using DotDice.RandomNumberGenerator;
@@ -472,59 +473,82 @@ namespace DotDice.Evaluator
             ApplyKeepOrDropModifierDetailed(events, dropModifier.Count, dropModifier.DropHighest, isKeep: false);
         }
 
+        /// <summary>
+        /// Marks dice kept or dropped by rank, selecting over pooled index buffers
+        /// rather than materialising and ordering the events themselves.
+        ///
+        /// Selection is stable in original roll order: among dice of equal value, the
+        /// earliest-rolled are selected first. That is not cosmetic pedantry. Which of
+        /// two equal dice is marked <see cref="DieStatus.Dropped"/> is visible through
+        /// <see cref="EvaluateDetailed"/>, and consumers render dropped dice
+        /// differently. Array.Sort is not a stable sort, so stability here comes from
+        /// the sort key rather than from the sort.
+        /// </summary>
         private void ApplyKeepOrDropModifierDetailed(List<DieEvent> events, int count, bool selectHighest, bool isKeep)
         {
-            // Only process rollable events that aren't already discarded
-            var rollableEvents = events
-                .Where(e => e.Status != DieStatus.Discarded && ShouldProcessEvent(e))
-                .ToList();
+            var keyPool = ArrayPool<long>.Shared;
+            // Sort keys pack the ranking value and the die's index into one long, so a
+            // plain ascending sort of the keys yields the selection order directly and
+            // the indices come back out of the low half.
+            var keys = keyPool.Rent(events.Count);
 
-            if (isKeep && rollableEvents.Count <= count)
+            try
             {
-                // Keep all if we have fewer than or equal to the keep count
-                return;
-            }
+                int rollable = 0;
 
-            if (!isKeep && rollableEvents.Count <= count)
-            {
-                // Drop all if we have fewer than or equal to the drop count
-                foreach (var evt in rollableEvents)
+                for (int i = 0; i < events.Count; i++)
                 {
-                    evt.Status = DieStatus.Dropped;
-                }
-                return;
-            }
-
-            var ordered = selectHighest
-                ? rollableEvents.OrderByDescending(e => e.Value)
-                : rollableEvents.OrderBy(e => e.Value);
-
-            var selectedEvents = ordered.Take(count);
-
-            if (isKeep)
-            {
-                // Use reference equality comparer to ensure we track specific DieEvent instances,
-                // not value-based equality (since DieEvent is a record type)
-                var keptEventSet = new HashSet<DieEvent>(selectedEvents, ReferenceEqualityComparer.Instance);
-
-                // Mark non-kept rollable events as dropped
-                foreach (var evt in rollableEvents)
-                {
-                    if (!keptEventSet.Contains(evt))
+                    var evt = events[i];
+                    if (evt.Status == DieStatus.Discarded || !ShouldProcessEvent(evt))
                     {
-                        evt.Status = DieStatus.Dropped;
+                        continue;
                     }
+
+                    // Negating for keep-highest lets both directions use one ascending
+                    // sort while leaving the index half ascending, which is what makes
+                    // ties resolve in roll order either way. Widened before negating so
+                    // the sign never wraps.
+                    long rank = selectHighest ? -(long)evt.Value : evt.Value;
+                    keys[rollable++] = (rank << 32) | (uint)i;
+                }
+
+                if (rollable <= count)
+                {
+                    // Fewer dice than the modifier selects: keeping them all is a no-op,
+                    // dropping them all is not.
+                    if (!isKeep)
+                    {
+                        for (int i = 0; i < rollable; i++)
+                        {
+                            events[IndexOf(keys[i])].Status = DieStatus.Dropped;
+                        }
+                    }
+                    return;
+                }
+
+                Array.Sort(keys, 0, rollable);
+
+                // The sort partitions the dice at `count`: everything before the
+                // boundary is selected, everything after it is not. Keep drops the far
+                // side, drop drops the near side. Selected dice are left exactly as they
+                // were rather than being set back to Kept, so a die already dropped by an
+                // earlier modifier stays dropped.
+                int from = isKeep ? count : 0;
+                int to = isKeep ? rollable : count;
+
+                for (int i = from; i < to; i++)
+                {
+                    events[IndexOf(keys[i])].Status = DieStatus.Dropped;
                 }
             }
-            else
+            finally
             {
-                // For drop, mark the selected events as dropped
-                foreach (var evt in selectedEvents)
-                {
-                    evt.Status = DieStatus.Dropped;
-                }
+                keyPool.Return(keys);
             }
         }
+
+        /// <summary>Recovers the event index packed into the low half of a sort key.</summary>
+        private static int IndexOf(long sortKey) => (int)(uint)sortKey;
 
         /// <summary>
         /// Applies success and/or failure counting against the same set of active dice.
