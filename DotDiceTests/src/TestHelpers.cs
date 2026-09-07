@@ -115,5 +115,51 @@ namespace DotDice.Tests
                 throw new NotSupportedException("RecordingRandomNumberGenerator is scripted, not seeded");
             }
         }
+
+        /// <summary>
+        /// A scripted RNG that cycles its values and allocates nothing while doing it.
+        ///
+        /// <see cref="RecordingRandomNumberGenerator"/> builds a string per draw, which
+        /// is fine for pinning draw order and useless for measuring what an evaluation
+        /// allocates. This one exists so an allocation assertion measures the evaluator
+        /// and not its test double.
+        /// </summary>
+        public class CyclingRandomNumberGenerator : IRandomNumberGenerator<int>
+        {
+            private readonly int[] _numbers;
+            private int _index = 0;
+
+            public CyclingRandomNumberGenerator(int[] numbers)
+            {
+                if (numbers.Length == 0)
+                {
+                    throw new ArgumentException("script must not be empty", nameof(numbers));
+                }
+                _numbers = numbers;
+            }
+
+            public int Next() => NextScripted();
+
+            public int Next(int maxValue) => NextScripted();
+
+            public int Next(int minValue, int maxValue) => NextScripted();
+
+            private int NextScripted()
+            {
+                var value = _numbers[_index];
+                _index = _index + 1 == _numbers.Length ? 0 : _index + 1;
+                return value;
+            }
+
+            public void SetSeed(int seed)
+            {
+                throw new NotSupportedException("CyclingRandomNumberGenerator is scripted, not seeded");
+            }
+
+            public int GetSeed()
+            {
+                throw new NotSupportedException("CyclingRandomNumberGenerator is scripted, not seeded");
+            }
+        }
     }
 }

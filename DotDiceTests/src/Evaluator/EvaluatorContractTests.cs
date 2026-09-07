@@ -179,6 +179,42 @@ namespace DotDice.Tests
             }).AsCollection);
         }
 
+        /// <summary>
+        /// Evaluate must allocate nothing at all.
+        ///
+        /// This is the property the whole slot representation exists for. The complaint
+        /// that prompted it was a Monte Carlo run allocating 3.4 GB over 100,000
+        /// iterations, which is a per-evaluation cost multiplied by a large number, so
+        /// per-evaluation is where it has to be measured. A test asserting speed would
+        /// be flaky; this one is exact.
+        ///
+        /// EvaluateDetailed is deliberately not covered: it returns per-die events, so
+        /// it allocates by definition.
+        /// </summary>
+        [TestCaseSource(nameof(Corpus))]
+        public void EvaluateAllocatesNothing(EvaluatorCase testCase)
+        {
+            var roll = Parse(testCase.Expression);
+            var evaluator = new DiceEvaluator(new CyclingRandomNumberGenerator(testCase.Script));
+
+            // Let the JIT settle first, or the measurement catches one-time costs that
+            // have nothing to do with the evaluation itself.
+            for (int i = 0; i < 200; i++)
+            {
+                evaluator.Evaluate(roll);
+            }
+
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < 100; i++)
+            {
+                evaluator.Evaluate(roll);
+            }
+            var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+            Assert.That(allocated, Is.Zero,
+                $"{testCase.Expression} allocated {allocated} bytes over 100 evaluations");
+        }
+
         #region Transcript storage
 
         private const string TranscriptFileName = "rng-call-transcripts.txt";
