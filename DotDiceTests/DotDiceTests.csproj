@@ -23,6 +23,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Recorded RNG draw transcripts, read by EvaluatorContractTests at run time. -->
+    <None Include="data\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\DotDice\DotDice.csproj" />
   </ItemGroup>
 
