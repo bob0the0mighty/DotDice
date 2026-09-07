@@ -142,7 +142,8 @@ namespace DotDice.Tests
             var result = "4d6>4".ParseRollDetailed(rng);
 
             Assert.That(result.Value, Is.EqualTo(2)); // 2 successes
-            Assert.That(result.Events.Count, Is.EqualTo(1)); // Success counting returns single result
+            Assert.That(result.Events.Count, Is.EqualTo(5)); // the 4 counted dice, then the count
+            Assert.That(result.Events[^1].Value, Is.EqualTo(2));
         }
 
         [Test]
