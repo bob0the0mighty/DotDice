@@ -9,3 +9,8 @@
   * **Added**: grammar shorthands. Bare `!` and `^` explode/compound on the die's maximum face; `!!` is an alias for `^`; a bare integer after `ro`, `rc`, `!`, or `^` means equality (`ro1` == `ro=1`, `3d6!6` == `3d6!=6`).
   * **Added**: `DiceEvaluator.MaxRerolls` property (default 10), matching the existing `MaxExplosions`/`MaxCompounds` loop guards.
   * **Improved**: `FormatException` from `ParseRoll`/`ParseRollDetailed` now includes the parser diagnostic (position and expected tokens).
+* V1.6.0 - Allocation-free evaluation:
+  * **Improved**: `Evaluate()`/`ParseRoll` no longer allocate. A 500-die roll goes from 36,472 bytes and 9,186ns to 0 bytes and 3,219ns; `1d20` goes from 544 bytes and 121ns to 0 bytes and 17ns. Evaluation runs over pooled value-type slots, with small pools held on the stack. This matters for Monte Carlo use: a 100,000-iteration `500d20` run allocated 3.4 GB and now allocates nothing.
+  * **Changed**: `Evaluate()` is no longer implemented as `EvaluateDetailed().Value`. Both still run one pipeline over one set of slots, and differential tests assert the two agree on both value and RNG draw order; `Evaluate()` simply stops before building per-die events. Keep/drop tie-breaking and the exact sequence of RNG calls are unchanged, and both are pinned by tests.
+  * **Regressed**: `EvaluateDetailed()` is 1.18x to 1.43x slower, because it now fills slots before building events. Allocation is unchanged. The absolute cost is tens of nanoseconds for a typical roll.
+  * No public API change.
